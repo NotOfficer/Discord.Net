@@ -14,9 +14,9 @@ namespace Discord.SlashCommands
         // This semaphore is used to prevent race conditions.
         private readonly SemaphoreSlim _moduleLock;
         // This contains a dictionary of all definde SlashCommands, based on it's name
-        public Dictionary<string, SlashCommandInfo> commandDefs;
+        public Dictionary<string, SlashCommandInfo> CommandDefs;
         // This contains a list of all slash command modules defined by their user in their assembly.
-        public Dictionary<Type, SlashModuleInfo> moduleDefs;
+        public Dictionary<Type, SlashModuleInfo> ModuleDefs;
 
         // This is such a complicated method to log stuff...
         public event Func<LogMessage, Task> Log { add { _logEvent.Add(value); } remove { _logEvent.Remove(value); } }
@@ -31,7 +31,7 @@ namespace Discord.SlashCommands
             
             _logManager = new LogManager(LogSeverity.Info);
             _logManager.Message += async msg => await _logEvent.InvokeAsync(msg).ConfigureAwait(false);
-            _logger = new Logger(_logManager, "SlshCommand");
+            _logger = new Logger(_logManager, "SlashCommand");
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace Discord.SlashCommands
             // Get the name of the actual command - be it a normal slash command or subcommand, and return the options we can give it.
             string name = GetSearchName(interaction.Data, out var resultingOptions);
             // We still need to make sure it is registerd.
-            if (commandDefs.TryGetValue(name, out commandInfo))
+            if (CommandDefs.TryGetValue(name, out commandInfo))
             {
                 // Then, set the context in which the command will be executed
                 commandInfo.Module.userCommandModule.SetContext(interaction);
@@ -78,7 +78,7 @@ namespace Discord.SlashCommands
             while(options != null && options.Count == 1)
             {
                 string newName = nameToSearch + SlashModuleInfo.PathSeperator + GetFirstOption(options).Name;
-                if (AnyKeyContains(commandDefs,newName))
+                if (AnyKeyContains(CommandDefs,newName))
                 {
                     nameToSearch = newName;
                     options = GetFirstOption(options).Options;
@@ -122,7 +122,7 @@ namespace Discord.SlashCommands
             try
             {
                 // Build and register all of the commands.
-                await SlashCommandServiceHelper.RegisterCommands(socketClient, moduleDefs, commandDefs, this, guildIDs, registrationOptions).ConfigureAwait(false);
+                await SlashCommandServiceHelper.RegisterCommands(socketClient, ModuleDefs, CommandDefs, this, guildIDs, registrationOptions).ConfigureAwait(false);
             }
             finally
             {
@@ -142,7 +142,7 @@ namespace Discord.SlashCommands
             List<SlashCommandCreationProperties> result;
             try
             {
-                result = await SlashCommandServiceHelper.BuildCommands(moduleDefs).ConfigureAwait(false);
+                result = await SlashCommandServiceHelper.BuildCommands(ModuleDefs).ConfigureAwait(false);
             }
             finally
             {
@@ -165,9 +165,9 @@ namespace Discord.SlashCommands
                 // Get all of the modules that were properly defined by the user.
                 IReadOnlyList<TypeInfo> types = await SlashCommandServiceHelper.GetValidModuleClasses(assembly, this).ConfigureAwait(false);
                 // Then, based on that, make an instance out of each of them, and get the resulting SlashModuleInfo s
-                moduleDefs = await SlashCommandServiceHelper.InstantiateModules(types, this, services).ConfigureAwait(false);
+                ModuleDefs = await SlashCommandServiceHelper.InstantiateModules(types, this, services).ConfigureAwait(false);
                 // After that, internally register all of the commands into SlashCommandInfo
-                commandDefs = await SlashCommandServiceHelper.CreateCommandInfos(types,moduleDefs,this).ConfigureAwait(false);
+                CommandDefs = await SlashCommandServiceHelper.CreateCommandInfos(types,ModuleDefs,this).ConfigureAwait(false);
             }
             finally
             {
