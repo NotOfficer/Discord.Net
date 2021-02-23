@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Discord.SlashCommands
 {
@@ -15,27 +11,28 @@ namespace Discord.SlashCommands
         /// <summary>
         ///     The internal value of this choice.
         /// </summary>
-        public string choiceStringValue;
+        public readonly string StringValue;
 
         /// <summary>
         ///     The internal value of this choice.
         /// </summary>
-        public int? choiceIntValue = null;
+        public readonly int? IntValue;
 
         /// <summary>
         ///     The display value of this choice.
         /// </summary>
-        public string choiceName;
+        public readonly string Name;
 
-        public Choice(string choiceName, string choiceValue)
+        public Choice(string name, string value)
         {
-            this.choiceName = choiceName;
-            this.choiceStringValue = choiceValue;
+            Name = name;
+            StringValue = value;
         }
-        public Choice(string choiceName, int choiceValue)
+
+        public Choice(string name, int value)
         {
-            this.choiceName = choiceName;
-            this.choiceIntValue = choiceValue;
+            Name = name;
+            IntValue = value;
         }
     }
 }

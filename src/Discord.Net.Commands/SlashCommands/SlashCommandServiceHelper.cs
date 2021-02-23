@@ -280,7 +280,7 @@ namespace Discord.SlashCommands
                 else if (descriptions.Count() > 1)
                     throw new Exception($"Too many Description attributes on a single parameter ({method.Name} -> {methodParameter.Name}). It can only contain one!");
                 else
-                    newParameter.Description = (descriptions.First() as Description).description;
+                    newParameter.Description = (descriptions.First() as Description).Value;
 
                 // Set the Type of the parameter.
                 // In the case of int and int? it returns the same type - INTEGER.
@@ -304,20 +304,20 @@ namespace Discord.SlashCommands
                     // If the parameter expects a string but the value of the choice is of type int, then throw an error.
                     if (newParameter.Type == ApplicationCommandOptionType.String)
                     {
-                        if(String.IsNullOrEmpty(choice.choiceStringValue))
+                        if(String.IsNullOrEmpty(choice.StringValue))
                         {
                             throw new Exception($"Parameter ({method.Name} -> {methodParameter.Name}) is of type string, but choice is of type int!");
                         }
-                        newParameter.AddChoice(choice.choiceName, choice.choiceStringValue);
+                        newParameter.AddChoice(choice.Name, choice.StringValue);
                     }
                     // If the parameter expects a int but the value of the choice is of type string, then throw an error.
                     if (newParameter.Type == ApplicationCommandOptionType.Integer)
                     {
-                        if (choice.choiceIntValue == null)
+                        if (choice.IntValue == null)
                         {
                             throw new Exception($"Parameter ({method.Name} -> {methodParameter.Name}) is of type int, but choice is of type string!");
                         }
-                        newParameter.AddChoice(choice.choiceName, (int)choice.choiceIntValue);
+                        newParameter.AddChoice(choice.Name, (int)choice.IntValue);
                     }
                 }
 

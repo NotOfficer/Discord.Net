@@ -11,12 +11,12 @@ namespace Discord.SlashCommands
         /// <summary>
         ///     The name of this slash command.
         /// </summary>
-        public string Name;
+        public readonly string Name;
 
         /// <summary>
         ///     The description of this slash command.
         /// </summary>
-        public string Description;
+        public readonly string Description;
 
         /// <summary>
         ///     Tells the <see cref="SlashCommandService"/> that this class/function is a slash command.

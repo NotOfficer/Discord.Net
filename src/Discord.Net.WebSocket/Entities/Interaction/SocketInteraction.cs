@@ -1,9 +1,8 @@
 using Discord.Rest;
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+
 using Model = Discord.API.Gateway.InteractionCreated;
 
 namespace Discord.WebSocket
@@ -56,22 +55,21 @@ namespace Discord.WebSocket
         /// </summary>
         public int Version { get; private set; }
 
-        public DateTimeOffset CreatedAt { get; }
+        /// <summary>
+        ///     The creation date of this interaction.
+        /// </summary>
+        public DateTimeOffset CreatedAt => SnowflakeUtils.FromSnowflake(Id).DateTime;
 
         /// <summary>
         ///     <see langword="true"/> if the token is valid for replying to, otherwise <see langword="false"/>.
         /// </summary>
-        public bool IsValidToken
-            => CheckToken();
+        public bool IsValidToken => CheckToken();
 
         private ulong GuildId { get; set; }
         private ulong ChannelId { get; set; }
         private ulong MemberId { get; set; }
 
-        internal SocketInteraction(DiscordSocketClient client, ulong id)
-            : base(client, id)
-        {
-        }
+        internal SocketInteraction(DiscordSocketClient client, ulong id) : base(client, id) { }
 
         internal static SocketInteraction Create(DiscordSocketClient client, Model model)
         {
@@ -109,7 +107,7 @@ namespace Discord.WebSocket
         /// <param name="text">The text of the message to be sent.</param>
         /// <param name="isTTS"><see langword="true"/> if the message should be read out by a text-to-speech reader, otherwise <see langword="false"/>.</param>
         /// <param name="embed">A <see cref="Embed"/> to send with this response.</param>
-        /// <param name="Type">The type of response to this Interaction.</param>
+        /// <param name="type">The type of response to this Interaction.</param>
         /// <param name="allowedMentions">The allowed mentions for this response.</param>
         /// <param name="options">The request options for this response.</param>
         /// <returns>
@@ -118,9 +116,9 @@ namespace Discord.WebSocket
         /// <exception cref="ArgumentOutOfRangeException">Message content is too long, length must be less or equal to <see cref="DiscordConfig.MaxMessageSize"/>.</exception>
         /// <exception cref="InvalidOperationException">The parameters provided were invalid or the token was invalid.</exception>
 
-        public async Task<IMessage> RespondAsync(string text = null, bool isTTS = false, Embed embed = null, InteractionResponseType Type = InteractionResponseType.ChannelMessageWithSource, AllowedMentions allowedMentions = null, RequestOptions options = null)
+        public async Task<IMessage> RespondAsync(string text = null, bool isTTS = false, Embed embed = null, InteractionResponseType type = InteractionResponseType.ChannelMessageWithSource, AllowedMentions allowedMentions = null, RequestOptions options = null)
         {
-            if (Type == InteractionResponseType.Pong)
+            if (type == InteractionResponseType.Pong)
                 throw new InvalidOperationException($"Cannot use {Type} on a send message function");
 
             if (!IsValidToken)
@@ -133,7 +131,7 @@ namespace Discord.WebSocket
             Preconditions.AtMost(allowedMentions?.UserIds?.Count ?? 0, 100, nameof(allowedMentions.UserIds), "A max of 100 user Ids are allowed.");
 
             // check that user flag and user Id list are exclusive, same with role flag and role Id list
-            if (allowedMentions != null && allowedMentions.AllowedTypes.HasValue)
+            if (allowedMentions?.AllowedTypes != null)
             {
                 if (allowedMentions.AllowedTypes.Value.HasFlag(AllowedMentionTypes.Users) &&
                     allowedMentions.UserIds != null && allowedMentions.UserIds.Count > 0)
@@ -148,10 +146,9 @@ namespace Discord.WebSocket
                 }
             }
 
-
             var response = new API.InteractionResponse()
             {
-                Type = Type,
+                Type = type,
                 Data = new API.InteractionApplicationCommandCallbackData(text)
                 {
                     AllowedMentions = allowedMentions?.ToModel(),
@@ -178,10 +175,10 @@ namespace Discord.WebSocket
         /// <returns>
         ///     The sent message.
         /// </returns>
-        public async Task<IMessage> FollowupAsync(string text = null, bool isTTS = false, Embed embed = null, InteractionResponseType Type = InteractionResponseType.ChannelMessageWithSource,
+        public async Task<IMessage> FollowupAsync(string text = null, bool isTTS = false, Embed embed = null, InteractionResponseType type = InteractionResponseType.ChannelMessageWithSource,
             AllowedMentions allowedMentions = null, RequestOptions options = null)
         {
-            if (Type == InteractionResponseType.ACKWithSource || Type == InteractionResponseType.ACKWithSource || Type == InteractionResponseType.Pong)
+            if (type == InteractionResponseType.ACKWithSource || type == InteractionResponseType.ACKWithSource || type == InteractionResponseType.Pong)
                 throw new InvalidOperationException($"Cannot use {Type} on a send message function");
 
             if (!IsValidToken)
