@@ -1,3 +1,4 @@
+using Discord.Commands;
 using Discord.Commands.Builders;
 using Discord.WebSocket;
 using System;
@@ -6,6 +7,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+
+using ParameterInfo = System.Reflection.ParameterInfo;
 
 namespace Discord.SlashCommands
 {
@@ -47,26 +50,29 @@ namespace Discord.SlashCommands
         /// <summary>
         /// Create an instance of each user-defined module
         /// </summary>
-        public static async Task<Dictionary<Type, SlashModuleInfo>> InstantiateModules(IReadOnlyList<TypeInfo> types, SlashCommandService slashCommandService)
+        public static async Task<Dictionary<Type, SlashModuleInfo>> InstantiateModules(IReadOnlyList<TypeInfo> types, SlashCommandService slashCommandService, IServiceProvider services)
         {
             var result = new Dictionary<Type, SlashModuleInfo>();
             // Here we get all modules thate are NOT sub command groups and instantiate them.
             foreach (Type userModuleType in types)
             {
+                var userModuleTypeInfo = userModuleType.GetTypeInfo();
+
                 SlashModuleInfo moduleInfo = new SlashModuleInfo(slashCommandService);
                 moduleInfo.SetType(userModuleType);
 
                 // If they want a constructor with different parameters, this is the place to add them.
-                object instance = userModuleType.GetConstructor(Type.EmptyTypes).Invoke(null);
+                var instance = ReflectionUtils.CreateObject<ISlashCommandModule>(userModuleTypeInfo, slashCommandService, services);
+                //object instance = userModuleType.GetConstructor(Type.EmptyTypes).Invoke(null);
                 moduleInfo.SetCommandModule(instance);
                 moduleInfo.isGlobal = IsCommandModuleGlobal(userModuleType);
 
-                moduleInfo.SetSubCommandGroups(InstantiateSubModules(userModuleType, moduleInfo, slashCommandService));
+                moduleInfo.SetSubCommandGroups(InstantiateSubModules(userModuleType, moduleInfo, slashCommandService, services));
                 result.Add(userModuleType, moduleInfo);
             }
             return result;
         }
-        public static List<SlashModuleInfo> InstantiateSubModules(Type rootModule,SlashModuleInfo rootModuleInfo, SlashCommandService slashCommandService)
+        public static List<SlashModuleInfo> InstantiateSubModules(Type rootModule, SlashModuleInfo rootModuleInfo, SlashCommandService slashCommandService, IServiceProvider services)
         {
             // Instantiate all of the nested modules.
             List<SlashModuleInfo> commandGroups = new List<SlashModuleInfo>();
@@ -74,17 +80,20 @@ namespace Discord.SlashCommands
             {
                 if(TryGetCommandGroupAttribute(commandGroupType, out CommandGroup commandGroup))
                 {
+                    var commandGroupTypeInfo = commandGroupType.GetTypeInfo();
+
                     SlashModuleInfo groupInfo = new SlashModuleInfo(slashCommandService);
                     groupInfo.SetType(commandGroupType);
 
-                    object instance = commandGroupType.GetConstructor(Type.EmptyTypes).Invoke(null);
+                    var instance = ReflectionUtils.CreateObject<ISlashCommandModule>(commandGroupTypeInfo, slashCommandService, services);
+                    //object instance = commandGroupType.GetConstructor(Type.EmptyTypes).Invoke(null);
                     groupInfo.SetCommandModule(instance);
 
                     groupInfo.MakeCommandGroup(commandGroup,rootModuleInfo);
                     groupInfo.MakePath();
                     groupInfo.isGlobal = IsCommandModuleGlobal(commandGroupType);
 
-                    groupInfo.SetSubCommandGroups(InstantiateSubModules(commandGroupType, groupInfo, slashCommandService));
+                    groupInfo.SetSubCommandGroups(InstantiateSubModules(commandGroupType, groupInfo, slashCommandService, services));
                     commandGroups.Add(groupInfo);
                 }
             }

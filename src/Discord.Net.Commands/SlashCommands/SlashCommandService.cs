@@ -165,7 +165,7 @@ namespace Discord.SlashCommands
                 // Get all of the modules that were properly defined by the user.
                 IReadOnlyList<TypeInfo> types = await SlashCommandServiceHelper.GetValidModuleClasses(assembly, this).ConfigureAwait(false);
                 // Then, based on that, make an instance out of each of them, and get the resulting SlashModuleInfo s
-                moduleDefs = await SlashCommandServiceHelper.InstantiateModules(types, this).ConfigureAwait(false);
+                moduleDefs = await SlashCommandServiceHelper.InstantiateModules(types, this, services).ConfigureAwait(false);
                 // After that, internally register all of the commands into SlashCommandInfo
                 commandDefs = await SlashCommandServiceHelper.CreateCommandInfos(types,moduleDefs,this).ConfigureAwait(false);
             }

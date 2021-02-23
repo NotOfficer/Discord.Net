@@ -1,3 +1,5 @@
+using Discord.SlashCommands;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,8 +11,9 @@ namespace Discord.Commands
     {
         private static readonly TypeInfo ObjectTypeInfo = typeof(object).GetTypeInfo();
 
-        internal static T CreateObject<T>(TypeInfo typeInfo, CommandService commands, IServiceProvider services = null)
-            => CreateBuilder<T>(typeInfo, commands)(services);
+        internal static T CreateObject<T>(TypeInfo typeInfo, SlashCommandService commands, IServiceProvider services = null) => CreateBuilder<T>(typeInfo, commands)(services);
+        internal static T CreateObject<T>(TypeInfo typeInfo, CommandService commands, IServiceProvider services = null) => CreateBuilder<T>(typeInfo, commands)(services);
+
         internal static Func<IServiceProvider, T> CreateBuilder<T>(TypeInfo typeInfo, CommandService commands)
         {
             var constructor = GetConstructor(typeInfo);
@@ -29,6 +32,26 @@ namespace Discord.Commands
                 return obj;
             };
         }
+
+        internal static Func<IServiceProvider, T> CreateBuilder<T>(TypeInfo typeInfo, SlashCommandService commands)
+        {
+            var constructor = GetConstructor(typeInfo);
+            var parameters = constructor.GetParameters();
+            var properties = GetProperties(typeInfo);
+
+            return (services) =>
+            {
+                var args = new object[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                    args[i] = GetMember(commands, services, parameters[i].ParameterType, typeInfo);
+                var obj = InvokeConstructor<T>(constructor, args, typeInfo);
+
+                foreach (var property in properties)
+                    property.SetValue(obj, GetMember(commands, services, property.PropertyType, typeInfo));
+                return obj;
+            };
+        }
+
         private static T InvokeConstructor<T>(ConstructorInfo constructor, object[] args, TypeInfo ownerType)
         {
             try
@@ -50,6 +73,7 @@ namespace Discord.Commands
                 throw new InvalidOperationException($"Multiple constructors found for \"{ownerType.FullName}\".");
             return constructors[0];
         }
+
         private static PropertyInfo[] GetProperties(TypeInfo ownerType)
         {
             var result = new List<System.Reflection.PropertyInfo>();
@@ -64,6 +88,21 @@ namespace Discord.Commands
             }
             return result.ToArray();
         }
+
+        private static object GetMember(SlashCommandService commands, IServiceProvider services, Type memberType, TypeInfo ownerType)
+        {
+            if (memberType == typeof(SlashCommandService))
+                return commands;
+            if (memberType == typeof(IServiceProvider) || memberType == services.GetType())
+                return services;
+
+            var service = services.GetService(memberType);
+            if (service != null)
+                return service;
+
+            throw new InvalidOperationException($"Failed to create \"{ownerType.FullName}\", dependency \"{memberType.Name}\" was not found.");
+        }
+
         private static object GetMember(CommandService commands, IServiceProvider services, Type memberType, TypeInfo ownerType)
         {
             if (memberType == typeof(CommandService))
