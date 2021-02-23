@@ -42,9 +42,9 @@ namespace Discord.SlashCommands
         private static bool IsValidModuleDefinition(TypeInfo typeInfo)
         {
             // See if the base type (SlashCommandInfo<T>) implements interface ISlashCommandModule
-            return typeInfo.BaseType.GetInterfaces()
-                .Any(n => n == typeof(ISlashCommandModule)) &&
-                typeInfo.GetCustomAttributes(typeof(CommandGroup)).Count() == 0;
+            return typeInfo.BaseType != null
+                   && typeInfo.BaseType.GetInterfaces().Any(n => n == typeof(ISlashCommandModule))
+                   && !typeInfo.GetCustomAttributes(typeof(CommandGroup)).Any();
         }
 
         /// <summary>
