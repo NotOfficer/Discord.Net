@@ -381,7 +381,7 @@ namespace Discord.SlashCommands
             return Delegate.CreateDelegate(getType(types.ToArray()), target, methodInfo.Name);
         }
 
-        public static async Task RegisterCommands(DiscordSocketClient socketClient, Dictionary<Type, SlashModuleInfo> rootModuleInfos, Dictionary<string, SlashCommandInfo> commandDefs, SlashCommandService slashCommandService, List<ulong> guildIDs,CommandRegistrationOptions options)
+        public static async Task RegisterCommands(DiscordSocketClient socketClient, Dictionary<Type, SlashModuleInfo> rootModuleInfos, Dictionary<string, SlashCommandInfo> commandDefs, SlashCommandService slashCommandService, IEnumerable<ulong> guildIDs,CommandRegistrationOptions options)
         {
             // TODO: see how we should handle if user wants to register two commands with the same name, one global and one not.
             // Build the commands
