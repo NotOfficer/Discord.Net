@@ -52,11 +52,11 @@ namespace Discord.SlashCommands
                 this.Commands = commands;
             }
         }
-        public void SetCommandModule(object userCommandModule)
+        public void SetCommandModule(ISlashCommandModule userCommandModule)
         {
             if (this.userCommandModule == null)
             {
-                this.userCommandModule = userCommandModule as ISlashCommandModule;
+                this.userCommandModule = userCommandModule;
             }
         }
         public void SetType(Type type)

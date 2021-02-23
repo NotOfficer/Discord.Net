@@ -14,6 +14,11 @@ namespace Discord.WebSocket
     public class SocketInteraction : SocketEntity<ulong>, IDiscordInteraction
     {
         /// <summary>
+        ///     The <see cref="DiscordSocketClient"/> this interaction was used in.
+        /// </summary>
+        public DiscordSocketClient Client => Discord;
+
+        /// <summary>
         ///     The <see cref="SocketGuild"/> this interaction was used in.
         /// </summary>
         public SocketGuild Guild
