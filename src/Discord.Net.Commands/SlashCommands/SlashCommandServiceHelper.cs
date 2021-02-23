@@ -267,7 +267,7 @@ namespace Discord.SlashCommands
                 else if (customNameAttributes.Count() > 1)
                     throw new Exception($"Too many ParameterName attributes on a single parameter ({method.Name} -> {methodParameter.Name}). It can only contain one!");
                 else
-                    newParameter.Name = (customNameAttributes.First() as ParameterName).name;
+                    newParameter.Name = (customNameAttributes.First() as ParameterName).Name;
 
                 // Get to see if it has a Description Attribute.
                 // If it has
