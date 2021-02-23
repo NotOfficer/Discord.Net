@@ -180,8 +180,8 @@ namespace Discord.SlashCommands
 
                     SlashCommandInfo commandInfo = new SlashCommandInfo(
                         module: moduleInfo,
-                        name: slashCommand.commandName,
-                        description: slashCommand.description,
+                        name: slashCommand.Name,
+                        description: slashCommand.Description,
                         // Generate the parameters. Due to it's complicated way the algorithm has been moved to its own function.
                         parameters: ConstructCommandParameters(commandMethod),
                         userMethod: delegateMethod,
