@@ -1,8 +1,10 @@
 using Discord.Commands;
 using Discord.Logging;
 using Discord.WebSocket;
+
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -106,9 +108,7 @@ namespace Discord.SlashCommands
 
         private SocketInteractionDataOption GetFirstOption(IReadOnlyCollection<SocketInteractionDataOption> options)
         {
-            var it = options.GetEnumerator();
-            it.MoveNext();
-            return it.Current;
+            return options.FirstOrDefault();
         }
 
         /// <summary>

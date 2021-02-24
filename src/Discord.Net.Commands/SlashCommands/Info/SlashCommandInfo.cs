@@ -1,16 +1,15 @@
 using Discord.Commands;
 using Discord.Commands.Builders;
 using Discord.WebSocket;
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Discord.SlashCommands
 {
-    public class SlashCommandInfo // var instance = ReflectionUtils.CreateObject<ISlashCommandModule>(userModuleTypeInfo, slashCommandService, services);
+    public class SlashCommandInfo
     {
         /// <summary>
         ///     Gets the module that the command belongs in.
