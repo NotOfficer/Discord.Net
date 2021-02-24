@@ -48,9 +48,9 @@ namespace Discord.SlashCommands
             if (CommandDefs.TryGetValue(name, out commandInfo))
             {
                 // Then, set the context in which the command will be executed
-                commandInfo.Module.userCommandModule.SetContext(interaction);
+                //commandInfo.Module.userCommandModule.SetContext(interaction);
                 // Then run the command and pass the interaction data over to the CommandInfo class
-                return await commandInfo.ExecuteAsync(resultingOptions).ConfigureAwait(false);
+                return await commandInfo.ExecuteAsync(resultingOptions, interaction).ConfigureAwait(false);
             }
             else
             {

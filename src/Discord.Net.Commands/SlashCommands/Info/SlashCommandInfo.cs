@@ -4,12 +4,13 @@ using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Discord.SlashCommands
 {
-    public class SlashCommandInfo
+    public class SlashCommandInfo // var instance = ReflectionUtils.CreateObject<ISlashCommandModule>(userModuleTypeInfo, slashCommandService, services);
     {
         /// <summary>
         ///     Gets the module that the command belongs in.
@@ -28,48 +29,52 @@ namespace Discord.SlashCommands
         /// </summary>
         public List<SlashParameterInfo> Parameters { get; }
 
-        public bool isGlobal { get; }
-        /// <summary>
-        /// The user method as a delegate. We need to use Delegate because there is an unknown number of parameters
-        /// </summary>
-        public Delegate userMethod;
-        /// <summary>
-        /// The callback that we call to start the delegate.
-        /// </summary>
-        public Func<object[], Task<IResult>> callback;
+        public bool IsGlobal { get; }
+        ///// <summary>
+        ///// The user method as a delegate. We need to use Delegate because there is an unknown number of parameters
+        ///// </summary>
+        //public Delegate userMethod;
+        ///// <summary>
+        ///// The callback that we call to start the delegate.
+        ///// </summary>
+        //public Func<object[], Task<IResult>> callback;
 
-        public SlashCommandInfo(SlashModuleInfo module, string name, string description,List<SlashParameterInfo> parameters , Delegate userMethod , bool isGlobal = false)
+        public MethodInfo MethodInfo { get; }
+
+        //public SlashCommandInfo(SlashModuleInfo module, string name, string description,List<SlashParameterInfo> parameters , Delegate userMethod , bool isGlobal = false)
+        public SlashCommandInfo(SlashModuleInfo module, string name, string description, List<SlashParameterInfo> parameters, MethodInfo methodInfo, bool isGlobal = false)
         {
             Module = module;
             Name = name;
             Description = description;
             Parameters = parameters;
-            this.userMethod = userMethod;
-            this.isGlobal = isGlobal;
-            this.callback = new Func<object[], Task<IResult>>(async (args) =>
-            {
-                // Try-catch it and see what we get - error or success
-                try
-                {
-                    await Task.Run(() =>
-                    {
-                        userMethod.DynamicInvoke(args);
-                    }).ConfigureAwait(false);
-                }
-                catch(Exception e)
-                {
-                    return ExecuteResult.FromError(e);
-                }
-                return ExecuteResult.FromSuccess();
+            //this.userMethod = userMethod;
+            IsGlobal = isGlobal;
+            MethodInfo = methodInfo;
+            //this.callback = new Func<object[], Task<IResult>>(async (args) =>
+            //{
+            //    // Try-catch it and see what we get - error or success
+            //    try
+            //    {
+            //        await Task.Run(() =>
+            //        {
+            //            userMethod.DynamicInvoke(args);
+            //        }).ConfigureAwait(false);
+            //    }
+            //    catch(Exception e)
+            //    {
+            //        return ExecuteResult.FromError(e);
+            //    }
+            //    return ExecuteResult.FromSuccess();
 
-            });
+            //});
         }
 
         /// <summary>
         /// Execute the function based on the interaction data we get.
         /// </summary>
         /// <param name="data">Interaction data from interaction</param>
-        public async Task<IResult> ExecuteAsync(IReadOnlyCollection<SocketInteractionDataOption> data)
+        public async Task<IResult> ExecuteAsync(IReadOnlyCollection<SocketInteractionDataOption> data, SocketInteraction interaction)
         {
             // List of arguments to be passed to the Delegate
             List<object> args = new List<object>();
@@ -97,6 +102,31 @@ namespace Discord.SlashCommands
             {
                 return ExecuteResult.FromError(e);
             }
+
+            var instance = ReflectionUtils.CreateObject<ISlashCommandModule>(Module.moduleType.GetTypeInfo(), Module.Service, Module.ServiceProvider);
+            instance.SetContext(interaction);
+
+            var delegateMethod = SlashCommandServiceHelper.CreateDelegate(MethodInfo, instance);
+
+            var callback = new Func<object[], Task<IResult>>(async callbackArgs =>
+            {
+                // Try-catch it and see what we get - error or success
+                try
+                {
+                    await Task.Run(() =>
+                               {
+                                   delegateMethod.DynamicInvoke(callbackArgs);
+                               }).
+                               ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    return ExecuteResult.FromError(e);
+                }
+
+                return ExecuteResult.FromSuccess();
+
+            });
 
             return await callback.Invoke(args.ToArray()).ConfigureAwait(false);
         }

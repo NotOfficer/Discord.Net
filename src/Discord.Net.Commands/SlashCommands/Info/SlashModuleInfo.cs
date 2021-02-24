@@ -16,9 +16,10 @@ namespace Discord.SlashCommands
         public const string RootModuleName = "TOP";
         public const string RootCommandPrefix = RootModuleName + PathSeperator;
 
-        public SlashModuleInfo(SlashCommandService service)
+        public SlashModuleInfo(SlashCommandService service, IServiceProvider services)
         {
             Service = service;
+            ServiceProvider = services;
         }
 
         public bool isCommandGroup { get; set; } = false;
@@ -33,6 +34,11 @@ namespace Discord.SlashCommands
         ///     Gets the command service associated with this module.
         /// </summary>
         public SlashCommandService Service { get; }
+
+        /// <summary>
+        ///     Gets the service rovider associated with this module.
+        /// </summary>
+        public IServiceProvider ServiceProvider { get; }
         /// <summary>
         ///     Gets a read-only list of commands associated with this module.
         /// </summary>
@@ -42,7 +48,7 @@ namespace Discord.SlashCommands
         /// The user command module defined as the interface ISlashCommandModule
         /// Used to set context.
         /// </summary>
-        public ISlashCommandModule userCommandModule;
+        //public ISlashCommandModule userCommandModule;
         public Type moduleType;
 
         public void SetCommands(List<SlashCommandInfo> commands)
@@ -52,13 +58,13 @@ namespace Discord.SlashCommands
                 this.Commands = commands;
             }
         }
-        public void SetCommandModule(ISlashCommandModule userCommandModule)
-        {
-            if (this.userCommandModule == null)
-            {
-                this.userCommandModule = userCommandModule;
-            }
-        }
+        //public void SetCommandModule(ISlashCommandModule userCommandModule)
+        //{
+        //    if (this.userCommandModule == null)
+        //    {
+        //        this.userCommandModule = userCommandModule;
+        //    }
+        //}
         public void SetType(Type type)
         {
             moduleType = type;
@@ -87,7 +93,7 @@ namespace Discord.SlashCommands
             foreach (var command in Commands)
             {
                 var builtCommand = command.BuildCommand();
-                if (isGlobal || command.isGlobal)
+                if (isGlobal || command.IsGlobal)
                 {
                     builtCommand.Global = true;
                 }
