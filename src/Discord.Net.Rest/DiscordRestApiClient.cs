@@ -793,7 +793,6 @@ namespace Discord.API
             return await SendAsync<ApplicationCommand[]>("GET", () => $"applications/{this.CurrentUserId}/commands", new BucketIds(), options: options).ConfigureAwait(false);
         }
 
-
         public async Task<ApplicationCommand> CreateGlobalApplicationCommandAsync(CreateApplicationCommandParams command, RequestOptions options = null)
         {
             Preconditions.NotNull(command, nameof(command));
@@ -805,6 +804,24 @@ namespace Discord.API
             options = RequestOptions.CreateOrClone(options);
 
             return await SendJsonAsync<ApplicationCommand>("POST", () => $"applications/{this.CurrentUserId}/commands", command, new BucketIds(), options: options).ConfigureAwait(false);
+        }
+        public async Task<ApplicationCommand[]> CreateGlobalApplicationCommandsAsync(List<CreateApplicationCommandParams> commands, RequestOptions options = null)
+        {
+            Preconditions.NotNull(commands, nameof(commands));
+            Preconditions.NotEqual(commands.Count, 0, nameof(commands));
+
+            foreach (var command in commands)
+            {
+                Preconditions.NotNull(command, nameof(command));
+                Preconditions.AtMost(command.Name.Length, 32, nameof(command.Name));
+                Preconditions.AtLeast(command.Name.Length, 3, nameof(command.Name));
+                Preconditions.AtMost(command.Description.Length, 100, nameof(command.Description));
+                Preconditions.AtLeast(command.Description.Length, 1, nameof(command.Description));
+            }
+
+            options = RequestOptions.CreateOrClone(options);
+
+            return await SendJsonAsync<ApplicationCommand[]>("PUT", () => $"applications/{this.CurrentUserId}/commands", commands, new BucketIds(), options: options).ConfigureAwait(false);
         }
         public async Task<ApplicationCommand> ModifyGlobalApplicationCommandAsync(ModifyApplicationCommandParams command, ulong commandId, RequestOptions options = null)
         {
@@ -853,6 +870,26 @@ namespace Discord.API
             var bucket = new BucketIds(guildId: guildId);
 
             return await SendJsonAsync<ApplicationCommand>("POST", () => $"applications/{this.CurrentUserId}/guilds/{guildId}/commands", command, bucket, options: options).ConfigureAwait(false);
+        }
+        public async Task<ApplicationCommand[]> CreateGuildApplicationCommandsAsync(List<CreateApplicationCommandParams> commands, ulong guildId, RequestOptions options = null)
+        {
+            Preconditions.NotNull(commands, nameof(commands));
+            Preconditions.NotEqual(commands.Count, 0, nameof(commands));
+
+            foreach (var command in commands)
+            {
+                Preconditions.NotNull(command, nameof(command));
+                Preconditions.AtMost(command.Name.Length, 32, nameof(command.Name));
+                Preconditions.AtLeast(command.Name.Length, 3, nameof(command.Name));
+                Preconditions.AtMost(command.Description.Length, 100, nameof(command.Description));
+                Preconditions.AtLeast(command.Description.Length, 1, nameof(command.Description));
+            }
+
+            options = RequestOptions.CreateOrClone(options);
+
+            var bucket = new BucketIds(guildId: guildId);
+
+            return await SendJsonAsync<ApplicationCommand[]>("PUT", () => $"applications/{this.CurrentUserId}/guilds/{guildId}/commands", commands, bucket, options: options).ConfigureAwait(false);
         }
         public async Task<ApplicationCommand> ModifyGuildApplicationCommandAsync(ModifyApplicationCommandParams command, ulong guildId, ulong commandId, RequestOptions options = null)
         {

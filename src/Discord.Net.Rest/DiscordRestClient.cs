@@ -119,6 +119,10 @@ namespace Discord.Rest
             => ClientHelper.GetGlobalApplicationCommands(this, options);
         public Task<IReadOnlyCollection<RestGuildCommand>> GetGuildApplicationCommands(ulong guildId, RequestOptions options = null)
             => ClientHelper.GetGuildApplicationCommands(this, guildId, options);
+        public Task<RestGlobalCommand[]> CreateGlobalCommands(List<SlashCommandCreationProperties> properties, RequestOptions options = null)
+            => InteractionHelper.CreateGlobalCommands(this, properties, options);
+        public Task<RestGuildCommand[]> CreateGuildCommands(List<SlashCommandCreationProperties> properties, ulong guildId, RequestOptions options = null)
+            => InteractionHelper.CreateGuildCommands(this, guildId, properties, options);
 
         //IDiscordClient
         /// <inheritdoc />

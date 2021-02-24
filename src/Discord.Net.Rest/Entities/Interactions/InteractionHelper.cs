@@ -2,6 +2,7 @@ using Discord.API;
 using Discord.API.Rest;
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -97,7 +98,6 @@ namespace Discord.Rest
             Preconditions.NotNullOrEmpty(args.Name, nameof(args.Name));
             Preconditions.NotNullOrEmpty(args.Description, nameof(args.Description));
 
-
             if (args.Options.IsSpecified)
             {
                 if (args.Options.Value.Count > 10)
@@ -154,6 +154,88 @@ namespace Discord.Rest
             Preconditions.NotEqual(command.Id, 0, nameof(command.Id));
 
             await client.ApiClient.DeleteGuildApplicationCommandAsync(command.GuildId, command.Id, options).ConfigureAwait(false);
+        }
+
+        internal static async Task<RestGuildCommand[]> CreateGuildCommands(BaseDiscordClient client, ulong guildId,
+           List<SlashCommandCreationProperties> argsList, RequestOptions options = null)
+        {
+            Preconditions.NotNull(argsList, nameof(argsList));
+            Preconditions.NotEqual(argsList.Count, 0, nameof(argsList));
+
+            var models = new List<CreateApplicationCommandParams>(argsList.Count);
+
+            foreach (var args in argsList)
+            {
+                Preconditions.NotNullOrEmpty(args.Name, nameof(args.Name));
+                Preconditions.NotNullOrEmpty(args.Description, nameof(args.Description));
+
+                if (args.Options.IsSpecified)
+                {
+                    if (args.Options.Value.Count > 10)
+                        throw new ArgumentException("Option count must be 10 or less");
+
+                    foreach (var item in args.Options.Value)
+                    {
+                        Preconditions.NotNullOrEmpty(item.Name, nameof(item.Name));
+                        Preconditions.NotNullOrEmpty(item.Description, nameof(item.Description));
+                    }
+                }
+
+                var model = new CreateApplicationCommandParams
+                {
+                    Name = args.Name,
+                    Description = args.Description,
+                    Options = args.Options.IsSpecified
+                    ? args.Options.Value.Select(x => new ApplicationCommandOption(x)).ToArray()
+                    : Optional<ApplicationCommandOption[]>.Unspecified
+                };
+
+                models.Add(model);
+            }
+
+            var cmd = await client.ApiClient.CreateGuildApplicationCommandsAsync(models, guildId, options).ConfigureAwait(false);
+            return cmd.Select(x => RestGuildCommand.Create(client, x, guildId)).ToArray();
+        }
+
+        internal static async Task<RestGlobalCommand[]> CreateGlobalCommands(BaseDiscordClient client,
+            List<SlashCommandCreationProperties> argsList, RequestOptions options = null)
+        {
+            Preconditions.NotNull(argsList, nameof(argsList));
+            Preconditions.NotEqual(argsList.Count, 0, nameof(argsList));
+
+            var models = new List<CreateApplicationCommandParams>(argsList.Count);
+
+            foreach (var args in argsList)
+            {
+                Preconditions.NotNullOrEmpty(args.Name, nameof(args.Name));
+                Preconditions.NotNullOrEmpty(args.Description, nameof(args.Description));
+
+                if (args.Options.IsSpecified)
+                {
+                    if (args.Options.Value.Count > 10)
+                        throw new ArgumentException("Option count must be 10 or less");
+
+                    foreach (var item in args.Options.Value)
+                    {
+                        Preconditions.NotNullOrEmpty(item.Name, nameof(item.Name));
+                        Preconditions.NotNullOrEmpty(item.Description, nameof(item.Description));
+                    }
+                }
+
+                var model = new CreateApplicationCommandParams
+                {
+                    Name = args.Name,
+                    Description = args.Description,
+                    Options = args.Options.IsSpecified
+                    ? args.Options.Value.Select(x => new ApplicationCommandOption(x)).ToArray()
+                    : Optional<ApplicationCommandOption[]>.Unspecified
+                };
+
+                models.Add(model);
+            }
+
+            var cmd = await client.ApiClient.CreateGlobalApplicationCommandsAsync(models, options).ConfigureAwait(false);
+            return cmd.Select(x => RestGlobalCommand.Create(client, x)).ToArray();
         }
     }
 }

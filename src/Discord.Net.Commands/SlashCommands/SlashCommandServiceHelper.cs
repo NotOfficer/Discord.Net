@@ -1,9 +1,7 @@
-using Discord.Commands;
-using Discord.Commands.Builders;
 using Discord.WebSocket;
+
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -392,7 +390,7 @@ namespace Discord.SlashCommands
             return Delegate.CreateDelegate(getType(types.ToArray()), target, methodInfo.Name);
         }
 
-        public static async Task RegisterCommands(DiscordSocketClient socketClient, Dictionary<Type, SlashModuleInfo> rootModuleInfos, Dictionary<string, SlashCommandInfo> commandDefs, SlashCommandService slashCommandService, IEnumerable<ulong> guildIDs,CommandRegistrationOptions options)
+        public static async Task RegisterCommands(DiscordSocketClient socketClient, Dictionary<Type, SlashModuleInfo> rootModuleInfos, Dictionary<string, SlashCommandInfo> commandDefs, SlashCommandService slashCommandService, IEnumerable<ulong> guildIds, CommandRegistrationOptions options)
         {
             // TODO: see how we should handle if user wants to register two commands with the same name, one global and one not.
             // Build the commands
@@ -402,9 +400,10 @@ namespace Discord.SlashCommands
             List<Rest.RestGuildCommand> existingGuildCommands = new List<Rest.RestGuildCommand>();
             List<Rest.RestGlobalCommand> existingGlobalCommands = new List<Rest.RestGlobalCommand>();
             existingGlobalCommands.AddRange(await socketClient.Rest.GetGlobalApplicationCommands().ConfigureAwait(false));
-            foreach (ulong guildID in guildIDs)
+
+            foreach (var guildId in guildIds)
             {
-                existingGuildCommands.AddRange(await socketClient.Rest.GetGuildApplicationCommands(guildID).ConfigureAwait(false));
+                existingGuildCommands.AddRange(await socketClient.Rest.GetGuildApplicationCommands(guildId).ConfigureAwait(false));
             }
 
             // If we want to keep the existing commands that are already registered
@@ -452,28 +451,38 @@ namespace Discord.SlashCommands
                 }
             }
 
+            var builtGlobalCommands = new List<SlashCommandCreationProperties>();
+            var builtGuildCommands = new List<SlashCommandCreationProperties>();
+
             // And now register them. Globally if the 'Global' flag is set.
             // If not then just register them as guild commands on all of the guilds given to us.
             foreach (var builtCommand in builtCommands)
             {
                 if (builtCommand.Global)
                 {
-                    //if (!existingGlobalCommands.Any(x => x.Name.Equals(builtCommand.Name)))
-                    //{
-                    //    await socketClient.Rest.CreateGlobalCommand(builtCommand).ConfigureAwait(false);
-                    //}
-                    await socketClient.Rest.CreateGlobalCommand(builtCommand).ConfigureAwait(false);
+                    builtGlobalCommands.Add(builtCommand);
+                    //await socketClient.Rest.CreateGlobalCommand(builtCommand).ConfigureAwait(false);
                 }
                 else
                 {
-                    foreach (ulong guildID in guildIDs)
-                    {
-                        //if (!existingGuildCommands.Any(x => x.GuildId == guildID && x.Name.Equals(builtCommand.Name)))
-                        //{
-                        //    await socketClient.Rest.CreateGuildCommand(builtCommand, guildID).ConfigureAwait(false);
-                        //}
-                        await socketClient.Rest.CreateGuildCommand(builtCommand, guildID).ConfigureAwait(false);
-                    }
+                    builtGuildCommands.Add(builtCommand);
+                    //foreach (ulong guildId in guildIds)
+                    //{
+                    //    await socketClient.Rest.CreateGuildCommand(builtCommand, guildId).ConfigureAwait(false);
+                    //}
+                }
+            }
+
+            if (builtGlobalCommands.Count != 0)
+            {
+                await socketClient.Rest.CreateGlobalCommands(builtGlobalCommands).ConfigureAwait(false);
+            }
+
+            if (builtGuildCommands.Count != 0)
+            {
+                foreach (var guildId in guildIds)
+                {
+                    await socketClient.Rest.CreateGuildCommands(builtGuildCommands, guildId).ConfigureAwait(false);
                 }
             }
         }
