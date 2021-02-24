@@ -24,7 +24,7 @@ namespace Discord.API
         public InteractionApplicationCommandCallbackData() { }
         public InteractionApplicationCommandCallbackData(string text)
         {
-            this.Content = text;
+            this.Content = text ?? string.Empty;
         }
         
     }

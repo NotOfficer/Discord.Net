@@ -1,9 +1,8 @@
 using Discord.API;
 using Discord.API.Rest;
+
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Discord.Rest
@@ -36,15 +35,13 @@ namespace Discord.Rest
                     throw new ArgumentException("Option count must be 10 or less");
             }
 
-            
-
             var model = new CreateApplicationCommandParams()
             {
                 Name = args.Name,
                 Description = args.Description,
                 Options = args.Options.IsSpecified
-                    ? args.Options.Value.Select(x => new Discord.API.ApplicationCommandOption(x)).ToArray()
-                    : Optional<Discord.API.ApplicationCommandOption[]>.Unspecified
+                    ? args.Options.Value.Select(x => new ApplicationCommandOption(x)).ToArray()
+                    : Optional<ApplicationCommandOption[]>.Unspecified
             };
 
             var cmd = await client.ApiClient.CreateGlobalApplicationCommandAsync(model, options).ConfigureAwait(false);
@@ -137,13 +134,13 @@ namespace Discord.Rest
                     throw new ArgumentException("Option count must be 10 or less");
             }
 
-            var model = new Discord.API.Rest.ModifyApplicationCommandParams()
+            var model = new ModifyApplicationCommandParams()
             {
                 Name = args.Name,
                 Description = args.Description,
                 Options = args.Options.IsSpecified
-                    ? args.Options.Value.Select(x => new Discord.API.ApplicationCommandOption(x)).ToArray()
-                    : Optional<Discord.API.ApplicationCommandOption[]>.Unspecified
+                    ? args.Options.Value.Select(x => new ApplicationCommandOption(x)).ToArray()
+                    : Optional<ApplicationCommandOption[]>.Unspecified
             };
 
             var msg = await client.ApiClient.ModifyGuildApplicationCommandAsync(model, command.GuildId, command.Id, options).ConfigureAwait(false);
