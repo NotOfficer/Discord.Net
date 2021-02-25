@@ -1,12 +1,8 @@
-using Discord.Commands;
 using Discord.Commands.Builders;
-using Discord.WebSocket;
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Discord.SlashCommands
 {
@@ -49,7 +45,8 @@ namespace Discord.SlashCommands
         /// Used to set context.
         /// </summary>
         //public ISlashCommandModule userCommandModule;
-        public Type moduleType;
+
+        public TypeInfo ModuleType { get; private set; }
 
         public void SetCommands(List<SlashCommandInfo> commands)
         {
@@ -65,9 +62,14 @@ namespace Discord.SlashCommands
         //        this.userCommandModule = userCommandModule;
         //    }
         //}
-        public void SetType(Type type)
+        public void SetModuleType(TypeInfo typeInfo)
         {
-            moduleType = type;
+            ModuleType = typeInfo;
+        }
+
+        public void SetModuleType(Type typeInfo)
+        {
+            ModuleType = typeInfo.GetTypeInfo();
         }
 
         public void MakeCommandGroup(CommandGroup commandGroupInfo, SlashModuleInfo parent)

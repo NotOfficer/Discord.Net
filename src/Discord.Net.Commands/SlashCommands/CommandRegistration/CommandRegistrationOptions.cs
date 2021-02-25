@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,3 +38,4 @@ namespace Discord.SlashCommands
             new CommandRegistrationOptions(OldCommandOptions.KEEP, ExistingCommandOptions.OVERWRITE);
     }
 }
+*/

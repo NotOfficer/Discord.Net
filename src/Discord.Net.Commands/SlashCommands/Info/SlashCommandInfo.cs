@@ -73,36 +73,28 @@ namespace Discord.SlashCommands
         /// Execute the function based on the interaction data we get.
         /// </summary>
         /// <param name="data">Interaction data from interaction</param>
+        /// <param name="interaction">SocketInteraction</param>
         public async Task<IResult> ExecuteAsync(IReadOnlyCollection<SocketInteractionDataOption> data, SocketInteraction interaction)
         {
             // List of arguments to be passed to the Delegate
-            List<object> args = new List<object>();
+            var args = new List<object>();
+
             try
             {
                 foreach (var parameter in Parameters)
                 {
                     // For each parameter to try find its coresponding DataOption based on the name.
-
                     // !!! names from `data` will always be lowercase regardless if we defined the command with any
                     // number of upercase letters !!!
-                    if (TryGetInteractionDataOption(data, parameter.Name, out SocketInteractionDataOption dataOption))
-                    {
-                        // Parse the dataOption to one corresponding argument type, and then add it to the list of arguments
-                        args.Add(parameter.Parse(dataOption));
-                    }
-                    else
-                    {
-                        // There was no input from the user on this field.
-                        args.Add(null);
-                    }
+                    args.Add(TryGetInteractionDataOption(data, parameter.Name, out var dataOption) ? parameter.Parse(dataOption) : null);
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return ExecuteResult.FromError(e);
             }
 
-            var instance = ReflectionUtils.CreateObject<ISlashCommandModule>(Module.moduleType.GetTypeInfo(), Module.Service, Module.ServiceProvider);
+            var instance = ReflectionUtils.CreateObject<ISlashCommandModule>(Module.ModuleType, Module.Service, Module.ServiceProvider);
             instance.SetContext(interaction);
 
             var delegateMethod = SlashCommandServiceHelper.CreateDelegate(MethodInfo, instance);
@@ -112,11 +104,7 @@ namespace Discord.SlashCommands
                 // Try-catch it and see what we get - error or success
                 try
                 {
-                    await Task.Run(() =>
-                               {
-                                   delegateMethod.DynamicInvoke(callbackArgs);
-                               }).
-                               ConfigureAwait(false);
+                    await Task.Run(() => { delegateMethod.DynamicInvoke(callbackArgs); }).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -132,21 +120,23 @@ namespace Discord.SlashCommands
         /// <summary>
         /// Get the interaction data from the name of the parameter we want to fill in.
         /// </summary>
-        private bool TryGetInteractionDataOption(IReadOnlyCollection<SocketInteractionDataOption> data, string name, out SocketInteractionDataOption dataOption)
+        private static bool TryGetInteractionDataOption(IReadOnlyCollection<SocketInteractionDataOption> data, string name, out SocketInteractionDataOption dataOption)
         {
             if (data == null)
             {
                 dataOption = null;
                 return false;
             }
+
             foreach (var option in data)
             {
-                if (option.Name == name.ToLower())
-                {
-                    dataOption = option;
-                    return true;
-                }
+                if (option.Name != name.ToLower())
+                    continue;
+
+                dataOption = option;
+                return true;
             }
+
             dataOption = null;
             return false;
         }
@@ -156,10 +146,11 @@ namespace Discord.SlashCommands
         /// </summary>
         public SlashCommandCreationProperties BuildCommand()
         {
-            SlashCommandBuilder builder = new SlashCommandBuilder();
+            var builder = new SlashCommandBuilder();
             builder.WithName(Name);
             builder.WithDescription(Description);
             builder.Options = new List<SlashCommandOptionBuilder>();
+
             foreach (var parameter in Parameters)
             {
                 builder.AddOptions(parameter);
@@ -173,11 +164,12 @@ namespace Discord.SlashCommands
         /// </summary>
         public SlashCommandOptionBuilder BuildSubCommand()
         {
-            SlashCommandOptionBuilder builder = new SlashCommandOptionBuilder();
+            var builder = new SlashCommandOptionBuilder();
             builder.WithName(Name);
             builder.WithDescription(Description);
             builder.WithType(ApplicationCommandOptionType.SubCommand);
             builder.Options = new List<SlashCommandOptionBuilder>();
+
             foreach (var parameter in Parameters)
             {
                 builder.AddOption(parameter);

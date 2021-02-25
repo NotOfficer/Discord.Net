@@ -21,19 +21,19 @@ namespace Discord.SlashCommands
         public Dictionary<Type, SlashModuleInfo> ModuleDefs;
 
         // This is such a complicated method to log stuff...
-        public event Func<LogMessage, Task> Log { add { _logEvent.Add(value); } remove { _logEvent.Remove(value); } }
-        internal readonly AsyncEvent<Func<LogMessage, Task>> _logEvent = new AsyncEvent<Func<LogMessage, Task>>();
-        internal Logger _logger;
-        internal LogManager _logManager;
+        public event Func<LogMessage, Task> Log { add { LogEvent.Add(value); } remove { LogEvent.Remove(value); } }
+        internal readonly AsyncEvent<Func<LogMessage, Task>> LogEvent = new();
+        internal Logger Logger;
+        internal LogManager LogManager;
 
         public SlashCommandService() // TODO: possible config?
         {
             // max one thread
             _moduleLock = new SemaphoreSlim(1, 1);
             
-            _logManager = new LogManager(LogSeverity.Info);
-            _logManager.Message += async msg => await _logEvent.InvokeAsync(msg).ConfigureAwait(false);
-            _logger = new Logger(_logManager, "SlashCommand");
+            LogManager = new LogManager(LogSeverity.Info);
+            LogManager.Message += async msg => await LogEvent.InvokeAsync(msg).ConfigureAwait(false);
+            Logger = new Logger(LogManager, "SlashCommand");
         }
 
         /// <summary>
@@ -43,22 +43,20 @@ namespace Discord.SlashCommands
         /// <returns></returns>
         public async Task<IResult> ExecuteAsync(SocketInteraction interaction)
         {
-            SlashCommandInfo commandInfo;
             // Get the name of the actual command - be it a normal slash command or subcommand, and return the options we can give it.
-            string name = GetSearchName(interaction.Data, out var resultingOptions);
+            var name = GetSearchName(interaction.Data, out var resultingOptions);
             // We still need to make sure it is registerd.
-            if (CommandDefs.TryGetValue(name, out commandInfo))
+            if (CommandDefs.TryGetValue(name, out var commandInfo))
             {
                 // Then, set the context in which the command will be executed
                 //commandInfo.Module.userCommandModule.SetContext(interaction);
                 // Then run the command and pass the interaction data over to the CommandInfo class
                 return await commandInfo.ExecuteAsync(resultingOptions, interaction).ConfigureAwait(false);
             }
-            else
-            {
-                return SearchResult.FromError(CommandError.UnknownCommand, $"There is no registered slash command with the name {interaction.Data.Name}");
-            }
+
+            return SearchResult.FromError(CommandError.UnknownCommand, $"There is no registered slash command with the name {interaction.Data.Name}");
         }
+
         /// <summary>
         /// Get the name of the command we want to search for - be it a normal slash command or a sub command. Returns as out the options to be given to the method.
         /// /// </summary>
@@ -75,46 +73,46 @@ namespace Discord.SlashCommands
             // because we are going to go through each sub-option it has. If it is a subcommand/ command group then it's going to be
             // inside the dictionary as TOP//{interactionData.name}//{option.name}
             // If the option is a parameter we then know that we've reached the end of the call chain - this should be our coomand!
-            string nameToSearch = SlashModuleInfo.RootCommandPrefix + interactionData.Name;
+            var nameToSearch = SlashModuleInfo.RootCommandPrefix + interactionData.Name;
             var options = interactionData.Options;
-            while(options != null && options.Count == 1)
+
+            while (options != null && options.Count == 1)
             {
-                string newName = nameToSearch + SlashModuleInfo.PathSeperator + GetFirstOption(options).Name;
+                var firstOption = options.First();
+                var newName = nameToSearch + SlashModuleInfo.PathSeperator + firstOption.Name;
+
                 if (AnyKeyContains(CommandDefs,newName))
                 {
                     nameToSearch = newName;
-                    options = GetFirstOption(options).Options;
+                    options = firstOption.Options;
                 }
                 else
                 {
                     break;
                 }
             }
+
             resultingOptions = options;
             return nameToSearch;
         }
         /// <summary>
         /// Test to see if any <b>string</b> key contains another string inside it.
         /// </summary>
-        private bool AnyKeyContains(Dictionary<string, SlashCommandInfo> commandDefs, string newName)
+        private static bool AnyKeyContains(Dictionary<string, SlashCommandInfo> commandDefs, string newName)
         {
             foreach (var pair in commandDefs)
             {
                 if (pair.Key.Contains(newName))
                     return true;
             }
-            return false;
-        }
 
-        private SocketInteractionDataOption GetFirstOption(IReadOnlyCollection<SocketInteractionDataOption> options)
-        {
-            return options.FirstOrDefault();
+            return false;
         }
 
         /// <summary>
         /// Registers with discord all previously scanned commands.
         /// </summary>
-        public async Task RegisterCommandsAsync(DiscordSocketClient socketClient, IEnumerable<ulong> guildIDs, CommandRegistrationOptions registrationOptions)
+        public async Task RegisterCommandsAsync(DiscordSocketClient socketClient, IEnumerable<ulong> guildIDs = null/*, CommandRegistrationOptions registrationOptions*/)
         {
             // First take a hold of the module lock, as to make sure we aren't editing stuff while we do our business
             await _moduleLock.WaitAsync().ConfigureAwait(false);
@@ -122,17 +120,18 @@ namespace Discord.SlashCommands
             try
             {
                 // Build and register all of the commands.
-                await SlashCommandServiceHelper.RegisterCommands(socketClient, ModuleDefs, CommandDefs, this, guildIDs, registrationOptions).ConfigureAwait(false);
+                await SlashCommandServiceHelper.RegisterCommands(socketClient, ModuleDefs, guildIDs/*, registrationOptions*/).ConfigureAwait(false);
             }
             finally
             {
                 _moduleLock.Release();
             }
-            await _logger.InfoAsync("All commands have been registered!").ConfigureAwait(false);
+
+            await Logger.InfoAsync("All commands have been registered!").ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Build all the commands and return them, for manual registration with Discord. This is automatically done in <see cref="RegisterCommandsAsync(DiscordSocketClient, List{ulong}, CommandRegistrationOptions)"/>
+        /// Build all the commands and return them, for manual registration with Discord. This is automatically done in <see cref="RegisterCommandsAsync(DiscordSocketClient,IEnumerable{ulong})"/>
         /// </summary>
         /// <returns>A list of all the valid commands found within this Assembly.</returns>
         public async Task<List<SlashCommandCreationProperties>> BuildCommands()
@@ -140,15 +139,17 @@ namespace Discord.SlashCommands
             // First take a hold of the module lock, as to make sure we aren't editing stuff while we do our business
             await _moduleLock.WaitAsync().ConfigureAwait(false);
             List<SlashCommandCreationProperties> result;
+
             try
             {
-                result = await SlashCommandServiceHelper.BuildCommands(ModuleDefs).ConfigureAwait(false);
+                result = SlashCommandServiceHelper.BuildCommands(ModuleDefs);
             }
             finally
             {
                 _moduleLock.Release();
             }
-            await _logger.InfoAsync("All commands have been built!").ConfigureAwait(false);
+
+            await Logger.InfoAsync("All commands have been built!").ConfigureAwait(false);
             return result;
         }
 
@@ -163,11 +164,11 @@ namespace Discord.SlashCommands
             try
             {
                 // Get all of the modules that were properly defined by the user.
-                IReadOnlyList<TypeInfo> types = await SlashCommandServiceHelper.GetValidModuleClasses(assembly, this).ConfigureAwait(false);
+                var types = await SlashCommandServiceHelper.GetValidModuleClasses(assembly, this).ConfigureAwait(false);
                 // Then, based on that, make an instance out of each of them, and get the resulting SlashModuleInfo s
-                ModuleDefs = await SlashCommandServiceHelper.InstantiateModules(types, this, services).ConfigureAwait(false);
+                ModuleDefs = SlashCommandServiceHelper.InstantiateModules(types, this, services);
                 // After that, internally register all of the commands into SlashCommandInfo
-                CommandDefs = await SlashCommandServiceHelper.CreateCommandInfos(types,ModuleDefs,this).ConfigureAwait(false);
+                CommandDefs = SlashCommandServiceHelper.CreateCommandInfos(types,ModuleDefs,this);
             }
             finally
             {
