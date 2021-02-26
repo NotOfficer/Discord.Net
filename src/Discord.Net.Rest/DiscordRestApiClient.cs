@@ -924,8 +924,13 @@ namespace Discord.API
         //Interaction Responses
         public async Task CreateInteractionResponse(InteractionResponse response, ulong interactionId, string interactionToken, RequestOptions options = null)
         {
-            if(response.Data.IsSpecified && response.Data.Value.Content.IsSpecified)
+            if (response.Data.IsSpecified && response.Data.Value.Content.IsSpecified)
+            {
                 Preconditions.AtMost(response.Data.Value.Content.Value.Length, 2000, nameof(response.Data.Value.Content));
+
+                if (response.Data.Value.Content.Value == null)
+                    response.Data.Value.Content = string.Empty;
+            }
 
             options = RequestOptions.CreateOrClone(options);
 
