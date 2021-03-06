@@ -13,7 +13,7 @@ namespace Discord.SlashCommands
 {
     internal static class SlashCommandServiceHelper
     {
-        private static readonly Type SlashcommandmoduleType = typeof(ISlashCommandModule);
+        private static readonly Type SlashCommandModuleType = typeof(ISlashCommandModule);
         private static readonly Type CommandGroupType = typeof(CommandGroup);
         private static readonly Type GlobalType = typeof(Global);
         private static readonly Type RequiredType = typeof(Required);
@@ -48,8 +48,8 @@ namespace Discord.SlashCommands
         {
             // See if the base type (SlashCommandInfo<T>) implements interface ISlashCommandModule
             return !typeInfo.IsAbstract && !typeInfo.ContainsGenericParameters
-                   //&& typeInfo.BaseType.GetInterfaces().Any(n => n == typeof(ISlashCommandModule))
-                   && SlashcommandmoduleType.IsAssignableFrom(typeInfo)
+                   //&& typeInfo.BaseType.GetInterfaces().Any(n => n == SlashCommandModuleType)
+                   && SlashCommandModuleType.IsAssignableFrom(typeInfo)
                    //&& typeInfo.IsAssignableFrom(SlashcommandmoduleType)
                    && !typeInfo.GetCustomAttributes(CommandGroupType).Any();
         }
