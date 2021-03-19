@@ -853,7 +853,7 @@ namespace Discord.API
         {
             options = RequestOptions.CreateOrClone(options);
 
-            var bucket = new BucketIds(guildId: guildId);
+            var bucket = new BucketIds(guildId);
 
             return await SendAsync<ApplicationCommand[]>("GET", () => $"applications/{this.CurrentUserId}/guilds/{guildId}/commands", bucket, options: options).ConfigureAwait(false);
         }
@@ -867,7 +867,7 @@ namespace Discord.API
 
             options = RequestOptions.CreateOrClone(options);
 
-            var bucket = new BucketIds(guildId: guildId);
+            var bucket = new BucketIds(guildId);
 
             return await SendJsonAsync<ApplicationCommand>("POST", () => $"applications/{this.CurrentUserId}/guilds/{guildId}/commands", command, bucket, options: options).ConfigureAwait(false);
         }
@@ -887,7 +887,7 @@ namespace Discord.API
 
             options = RequestOptions.CreateOrClone(options);
 
-            var bucket = new BucketIds(guildId: guildId);
+            var bucket = new BucketIds(guildId);
 
             return await SendJsonAsync<ApplicationCommand[]>("PUT", () => $"applications/{this.CurrentUserId}/guilds/{guildId}/commands", commands, bucket, options: options).ConfigureAwait(false);
         }
@@ -908,7 +908,7 @@ namespace Discord.API
 
             options = RequestOptions.CreateOrClone(options);
 
-            var bucket = new BucketIds(guildId: guildId);
+            var bucket = new BucketIds(guildId);
 
             return await SendJsonAsync<ApplicationCommand>("PATCH", () => $"applications/{this.CurrentUserId}/guilds/{guildId}/commands/{commandId}", command, bucket, options: options).ConfigureAwait(false);
         }
@@ -916,7 +916,7 @@ namespace Discord.API
         {
             options = RequestOptions.CreateOrClone(options);
 
-            var bucket = new BucketIds(guildId: guildId);
+            var bucket = new BucketIds(guildId);
 
             await SendAsync<ApplicationCommand>("DELETE", () => $"applications/{this.CurrentUserId}/guilds/{guildId}/commands/{commandId}", bucket, options: options).ConfigureAwait(false);
         }
@@ -926,10 +926,10 @@ namespace Discord.API
         {
             if (response.Data.IsSpecified && response.Data.Value.Content.IsSpecified)
             {
-                Preconditions.AtMost(response.Data.Value.Content.Value.Length, 2000, nameof(response.Data.Value.Content));
-
                 if (response.Data.Value.Content.Value == null)
                     response.Data.Value.Content = string.Empty;
+                else
+                    Preconditions.AtMost(response.Data.Value.Content.Value.Length, 2000, nameof(response.Data.Value.Content));
             }
 
             options = RequestOptions.CreateOrClone(options);

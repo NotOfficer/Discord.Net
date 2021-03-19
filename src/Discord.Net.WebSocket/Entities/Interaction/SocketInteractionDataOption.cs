@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 using Model = Discord.API.ApplicationCommandInteractionDataOption;
 
 namespace Discord.WebSocket
@@ -14,28 +12,28 @@ namespace Discord.WebSocket
     public class SocketInteractionDataOption : IApplicationCommandInteractionDataOption
     {
         /// <inheritdoc/>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <inheritdoc/>
-        public object Value { get; private set; }
+        public object Value { get; }
 
         /// <summary>
         ///      The sub command options recieved for this sub command group.
         /// </summary>
-        public IReadOnlyCollection<SocketInteractionDataOption> Options { get; private set; }
+        public IReadOnlyCollection<SocketInteractionDataOption> Options { get; }
 
-        private DiscordSocketClient discord;
-        private ulong guild;
+        private readonly DiscordSocketClient _discord;
+        private readonly ulong _guild;
 
         internal SocketInteractionDataOption() { }
         internal SocketInteractionDataOption(Model model, DiscordSocketClient discord, ulong guild)
         {
-            this.Name = model.Name;
-            this.Value = model.Value.IsSpecified ? model.Value.Value : null;
-            this.discord = discord;
-            this.guild = guild;
+            Name = model.Name;
+            Value = model.Value.IsSpecified ? model.Value.Value : null;
+            _discord = discord;
+            _guild = guild;
 
-            this.Options = model.Options.IsSpecified
+            Options = model.Options.IsSpecified
                 ? model.Options.Value.Select(x => new SocketInteractionDataOption(x, discord, guild)).ToImmutableArray().ToReadOnlyCollection()
                 : null;
 
@@ -47,7 +45,7 @@ namespace Discord.WebSocket
         // The default value is of type long, so an implementaiton of of the long option is trivial
         public static explicit operator int(SocketInteractionDataOption option)
             => unchecked(
-            (int)( (long)option.Value )
+            (int)(long)option.Value
             );
         public static explicit operator string(SocketInteractionDataOption option)
             => option.Value.ToString();
@@ -56,62 +54,44 @@ namespace Discord.WebSocket
         {
             if (option.Value == null)
                 return null;
-            else
-                return (bool)option;
+
+            return (bool)option;
         }
         public static explicit operator int?(SocketInteractionDataOption option)
         {
             if (option.Value == null)
                 return null;
-            else
-                return (int)option;
+
+            return (int)option;
         }
 
         public static explicit operator SocketGuildChannel(SocketInteractionDataOption option)
         {
-            if (ulong.TryParse((string)option.Value, out ulong id))
-            {
-                var guild = option.discord.GetGuild(option.guild);
+            if (!ulong.TryParse((string)option.Value, out var id))
+                return null;
 
-                if (guild == null)
-                    return null;
-
-                return guild.GetChannel(id);
-            }
-
-            return null;
+            var guild = option._discord.GetGuild(option._guild);
+            return guild?.GetChannel(id);
         }
 
         public static explicit operator SocketRole(SocketInteractionDataOption option)
         {
-            if (ulong.TryParse((string)option.Value, out ulong id))
-            {
-                var guild = option.discord.GetGuild(option.guild);
+            if (!ulong.TryParse((string)option.Value, out var id))
+                return null;
 
-                if (guild == null)
-                    return null;
-
-                return guild.GetRole(id);
-            }
-
-            return null;
+            var guild = option._discord.GetGuild(option._guild);
+            return guild?.GetRole(id);
         }
 
         public static explicit operator SocketGuildUser(SocketInteractionDataOption option)
         {
-            if (ulong.TryParse((string)option.Value, out ulong id))
-            {
-                var guild = option.discord.GetGuild(option.guild);
+            if (!ulong.TryParse((string)option.Value, out var id))
+                return null;
 
-                if (guild == null)
-                    return null;
-
-                return guild.GetUser(id);
-            }
-
-            return null;
+            var guild = option._discord.GetGuild(option._guild);
+            return guild?.GetUser(id);
         }
 
-        IReadOnlyCollection<IApplicationCommandInteractionDataOption> IApplicationCommandInteractionDataOption.Options => this.Options;
+        IReadOnlyCollection<IApplicationCommandInteractionDataOption> IApplicationCommandInteractionDataOption.Options => Options;
     }
 }

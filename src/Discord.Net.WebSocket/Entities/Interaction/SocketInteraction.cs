@@ -1,3 +1,5 @@
+using Discord.API;
+using Discord.API.Rest;
 using Discord.Rest;
 
 using System;
@@ -80,21 +82,21 @@ namespace Discord.WebSocket
 
         internal void Update(Model model)
         {
-            this.Data = model.Data.IsSpecified
-                ? SocketInteractionData.Create(this.Discord, model.Data.Value, model.GuildId)
+            Data = model.Data.IsSpecified
+                ? SocketInteractionData.Create(Discord, model.Data.Value, model.GuildId)
                 : null;
 
-            this.GuildId = model.GuildId;
-            this.ChannelId = model.ChannelId;
-            this.Token = model.Token;
-            this.Version = model.Version;
-            this.MemberId = model.Member.User.Id;
-            this.Type = model.Type;
+            GuildId = model.GuildId;
+            ChannelId = model.ChannelId;
+            Token = model.Token;
+            Version = model.Version;
+            MemberId = model.Member.User.Id;
+            Type = model.Type;
         }
         private bool CheckToken()
         {
             // Tokens last for 15 minutes according to https://discord.com/developers/docs/interactions/slash-commands#responding-to-an-interaction
-            return (DateTime.UtcNow - this.CreatedAt.UtcDateTime).TotalMinutes >= 15d;
+            return (DateTime.UtcNow - CreatedAt.UtcDateTime).TotalMinutes >= 15d;
         }
 
         /// <summary>
@@ -146,20 +148,20 @@ namespace Discord.WebSocket
                 }
             }
 
-            var response = new API.InteractionResponse()
+            var response = new InteractionResponse
             {
                 Type = type,
-                Data = new API.InteractionApplicationCommandCallbackData(text)
+                Data = new InteractionApplicationCommandCallbackData(text)
                 {
                     AllowedMentions = allowedMentions?.ToModel(),
                     Embeds = embed != null
-                        ? new API.Embed[] { embed.ToModel() }
+                        ? new[] { embed.ToModel() }
                         : Optional<API.Embed[]>.Unspecified,
                     TTS = isTTS
                 }
             };
 
-            await Discord.Rest.ApiClient.CreateInteractionResponse(response, this.Id, Token, options);
+            await Discord.Rest.ApiClient.CreateInteractionResponse(response, Id, Token, options);
             return null;
         }
 
@@ -169,14 +171,14 @@ namespace Discord.WebSocket
         /// <param name="text">The text of the message to be sent</param>
         /// <param name="isTTS"><see langword="true"/> if the message should be read out by a text-to-speech reader, otherwise <see langword="false"/>.</param>
         /// <param name="embed">A <see cref="Embed"/> to send with this response.</param>
-        /// <param name="Type">The type of response to this Interaction.</param>
+        /// <param name="type">The type of response to this Interaction.</param>
         /// <param name="allowedMentions">The allowed mentions for this response.</param>
         /// <param name="options">The request options for this response.</param>
         /// <returns>
         ///     The sent message.
         /// </returns>
         public async Task<IMessage> FollowupAsync(string text = null, bool isTTS = false, Embed embed = null, InteractionResponseType type = InteractionResponseType.ChannelMessageWithSource,
-            AllowedMentions allowedMentions = null, RequestOptions options = null)
+                                                  AllowedMentions allowedMentions = null, RequestOptions options = null)
         {
             if (type == InteractionResponseType.ACKWithSource || type == InteractionResponseType.ACKWithSource || type == InteractionResponseType.Pong)
                 throw new InvalidOperationException($"Cannot use {Type} on a send message function");
@@ -184,11 +186,11 @@ namespace Discord.WebSocket
             if (!IsValidToken)
                 throw new InvalidOperationException("Interaction token is no longer valid");
 
-            var args = new API.Rest.CreateWebhookMessageParams(text)
+            var args = new CreateWebhookMessageParams(text)
             {
                 IsTTS = isTTS,
                 Embeds = embed != null
-                        ? new API.Embed[] { embed.ToModel() }
+                        ? new[] { embed.ToModel() }
                         : Optional<API.Embed[]>.Unspecified,
             };
             
@@ -204,12 +206,12 @@ namespace Discord.WebSocket
         /// </returns>
         public async Task AcknowledgeAsync(RequestOptions options = null)
         {
-            var response = new API.InteractionResponse()
+            var response = new InteractionResponse
             {
                 Type = InteractionResponseType.ACKWithSource,
             };
 
-            await Discord.Rest.ApiClient.CreateInteractionResponse(response, this.Id, Token, options).ConfigureAwait(false);
+            await Discord.Rest.ApiClient.CreateInteractionResponse(response, Id, Token, options).ConfigureAwait(false);
         }
 
         IApplicationCommandInteractionData IDiscordInteraction.Data => Data;

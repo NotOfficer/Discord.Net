@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+
 using Model = Discord.API.Gateway.ApplicationCommandCreatedUpdatedEvent;
 
 namespace Discord.WebSocket
@@ -28,13 +28,13 @@ namespace Discord.WebSocket
         public IReadOnlyCollection<SocketApplicationCommandOption> Options { get; private set; }
 
         public DateTimeOffset CreatedAt
-            => SnowflakeUtils.FromSnowflake(this.Id);
+            => SnowflakeUtils.FromSnowflake(Id);
 
         /// <summary>
         ///     The <see cref="SocketGuild"/> where this application was created.
         /// </summary>
         public SocketGuild Guild
-            => Discord.GetGuild(this.GuildId);
+            => Discord.GetGuild(GuildId);
         private ulong GuildId { get; set; }
 
         internal SocketApplicationCommand(DiscordSocketClient client, ulong id)
@@ -51,12 +51,12 @@ namespace Discord.WebSocket
 
         internal void Update(Model model)
         {
-            this.ApplicationId = model.ApplicationId;
-            this.Description = model.Description;
-            this.Name = model.Name;
-            this.GuildId = model.GuildId;
+            ApplicationId = model.ApplicationId;
+            Description = model.Description;
+            Name = model.Name;
+            GuildId = model.GuildId;
 
-            this.Options = model.Options != null && model.Options.Count != 0
+            Options = model.Options != null && model.Options.Count != 0
                 ? model.Options.Select(SocketApplicationCommandOption.Create).ToImmutableArray()
                 : new ImmutableArray<SocketApplicationCommandOption>();
         }

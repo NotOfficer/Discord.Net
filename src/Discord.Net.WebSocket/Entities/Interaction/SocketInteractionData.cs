@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 using Model = Discord.API.ApplicationCommandInteractionData;
 
 namespace Discord.WebSocket
@@ -18,7 +16,7 @@ namespace Discord.WebSocket
         /// </summary>
         public IReadOnlyCollection<SocketInteractionDataOption> Options { get; private set; }
 
-        private ulong guildId;
+        private ulong _guildId;
 
         internal SocketInteractionData(DiscordSocketClient client, ulong id)
             : base(client, id)
@@ -34,11 +32,11 @@ namespace Discord.WebSocket
         }
         internal void Update(Model model, ulong guildId)
         {
-            this.Name = model.Name;
-            this.guildId = guildId;
+            Name = model.Name;
+            _guildId = guildId;
 
-            this.Options = model.Options.IsSpecified
-                ? model.Options.Value.Select(x => new SocketInteractionDataOption(x, this.Discord, guildId)).ToImmutableArray().ToReadOnlyCollection()
+            Options = model.Options.IsSpecified
+                ? model.Options.Value.Select(x => new SocketInteractionDataOption(x, Discord, guildId)).ToImmutableArray().ToReadOnlyCollection()
                 : null;
         }
 

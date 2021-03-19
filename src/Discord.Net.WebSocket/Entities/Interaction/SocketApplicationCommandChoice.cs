@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Model = Discord.API.ApplicationCommandOptionChoice;
 
 namespace Discord.WebSocket
@@ -27,8 +22,8 @@ namespace Discord.WebSocket
         }
         internal void Update(Model model)
         {
-            this.Name = model.Name;
-            this.Value = model.Value;
+            Name = model.Name;
+            Value = model.Value;
         }
     }
 }

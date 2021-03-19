@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 using Model = Discord.API.ApplicationCommandOption;
 
 namespace Discord.WebSocket
@@ -48,24 +46,24 @@ namespace Discord.WebSocket
 
         internal void Update(Model model)
         {
-            this.Name = model.Name;
-            this.Type = model.Type;
-            this.Description = model.Description;
+            Name = model.Name;
+            Type = model.Type;
+            Description = model.Description;
 
-            this.Default = model.Default.IsSpecified
+            Default = model.Default.IsSpecified
                 ? model.Default.Value
                 : (bool?)null;
 
-            this.Required = model.Required.IsSpecified
+            Required = model.Required.IsSpecified
                 ? model.Required.Value
                 : (bool?)null;
 
-            this.Choices = model.Choices.IsSpecified
-                ? model.Choices.Value.Select(x => SocketApplicationCommandChoice.Create(x)).ToImmutableArray().ToReadOnlyCollection()
+            Choices = model.Choices.IsSpecified
+                ? model.Choices.Value.Select(SocketApplicationCommandChoice.Create).ToImmutableArray().ToReadOnlyCollection()
                 : null;
 
-            this.Options = model.Options.IsSpecified
-                ? model.Options.Value.Select(x => SocketApplicationCommandOption.Create(x)).ToImmutableArray().ToReadOnlyCollection()
+            Options = model.Options.IsSpecified
+                ? model.Options.Value.Select(Create).ToImmutableArray().ToReadOnlyCollection()
                 : null;
         }
 
