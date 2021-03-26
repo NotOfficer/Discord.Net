@@ -60,7 +60,7 @@ namespace Discord.WebSocket
         /// <summary>
         ///     The creation date of this interaction.
         /// </summary>
-        public DateTimeOffset CreatedAt => SnowflakeUtils.FromSnowflake(Id).DateTime;
+        public DateTimeOffset CreatedAt => SnowflakeUtils.FromSnowflake(Id);
 
         /// <summary>
         ///     <see langword="true"/> if the token is valid for replying to, otherwise <see langword="false"/>.
@@ -96,15 +96,12 @@ namespace Discord.WebSocket
         private bool CheckToken()
         {
             // Tokens last for 15 minutes according to https://discord.com/developers/docs/interactions/slash-commands#responding-to-an-interaction
-            return (DateTime.UtcNow - CreatedAt.UtcDateTime).TotalMinutes >= 15d;
+            var elapsed = DateTimeOffset.UtcNow - CreatedAt;
+            return elapsed.TotalMinutes < 15d;
         }
 
         /// <summary>
         /// Responds to an Interaction.
-        /// <para>
-        ///     If you have <see cref="DiscordSocketConfig.AlwaysAcknowledgeInteractions"/> set to <see langword="true"/>, You should use
-        ///     <see cref="FollowupAsync(string, bool, Embed, InteractionResponseType, AllowedMentions, RequestOptions)"/> instead.
-        /// </para>
         /// </summary>
         /// <param name="text">The text of the message to be sent.</param>
         /// <param name="isTTS"><see langword="true"/> if the message should be read out by a text-to-speech reader, otherwise <see langword="false"/>.</param>
