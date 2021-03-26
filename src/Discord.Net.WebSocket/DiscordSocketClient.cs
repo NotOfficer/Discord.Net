@@ -73,7 +73,6 @@ namespace Discord.WebSocket
         internal bool AlwaysDownloadUsers { get; private set; }
         internal int? HandlerTimeout { get; private set; }
         internal bool? ExclusiveBulkDelete { get; private set; }
-        internal bool AlwaysAcknowledgeInteractions { get; private set; }
 
         internal new DiscordSocketApiClient ApiClient => base.ApiClient as DiscordSocketApiClient;
         /// <inheritdoc />
@@ -136,7 +135,6 @@ namespace Discord.WebSocket
             UdpSocketProvider = config.UdpSocketProvider;
             WebSocketProvider = config.WebSocketProvider;
             AlwaysDownloadUsers = config.AlwaysDownloadUsers;
-            AlwaysAcknowledgeInteractions = config.AlwaysAcknowledgeInteractions;
             HandlerTimeout = config.HandlerTimeout;
             ExclusiveBulkDelete = config.ExclusiveBulkDelete;
             State = new ClientState(0, 0);
@@ -1816,9 +1814,6 @@ namespace Discord.WebSocket
                                         }
 
                                         var interaction = SocketInteraction.Create(this, data);
-
-                                        if (this.AlwaysAcknowledgeInteractions)
-                                            await interaction.AcknowledgeAsync().ConfigureAwait(false);
 
                                         await TimedInvokeAsync(_interactionCreatedEvent, nameof(InteractionCreated), interaction).ConfigureAwait(false);
                                     }

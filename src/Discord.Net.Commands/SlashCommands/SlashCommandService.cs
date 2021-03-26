@@ -168,7 +168,7 @@ namespace Discord.SlashCommands
                 // Then, based on that, make an instance out of each of them, and get the resulting SlashModuleInfo s
                 ModuleDefs = SlashCommandServiceHelper.InstantiateModules(types, this, services);
                 // After that, internally register all of the commands into SlashCommandInfo
-                CommandDefs = SlashCommandServiceHelper.CreateCommandInfos(types,ModuleDefs,this);
+                CommandDefs = SlashCommandServiceHelper.CreateCommandInfos(types, ModuleDefs, this);
             }
             finally
             {

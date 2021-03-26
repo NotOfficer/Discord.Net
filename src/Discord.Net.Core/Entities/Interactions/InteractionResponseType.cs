@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Discord
 {
@@ -19,21 +15,23 @@ namespace Discord
         /// <summary>
         ///     ACK a command without sending a message, eating the user's input.
         /// </summary>
+        [Obsolete("DEPRECATED", true)]
         Acknowledge = 2,
 
         /// <summary>
         ///     Respond with a message, eating the user's input.
         /// </summary>
+        [Obsolete("DEPRECATED", true)]
         ChannelMessage = 3,
 
         /// <summary>
-        ///     Respond with a message, showing the user's input.
+        ///     Respond to an interaction with a message.
         /// </summary>
         ChannelMessageWithSource = 4,
 
         /// <summary>
-        ///     ACK a command without sending a message, showing the user's input.
+        ///     ACK an interaction and edit to a response later, the user sees a loading state.
         /// </summary>
-        ACKWithSource = 5
+        DeferredChannelMessageWithSource = 5
     }
 }
