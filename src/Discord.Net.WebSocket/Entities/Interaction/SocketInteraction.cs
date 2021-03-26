@@ -126,9 +126,6 @@ namespace Discord.WebSocket
             if (!IsValidToken)
                 throw new InvalidOperationException("Interaction token is no longer valid");
 
-            if (Discord.AlwaysAcknowledgeInteractions)
-                return await FollowupAsync();
-
             Preconditions.AtMost(allowedMentions?.RoleIds?.Count ?? 0, 100, nameof(allowedMentions.RoleIds), "A max of 100 role Ids are allowed.");
             Preconditions.AtMost(allowedMentions?.UserIds?.Count ?? 0, 100, nameof(allowedMentions.UserIds), "A max of 100 user Ids are allowed.");
 
@@ -180,7 +177,7 @@ namespace Discord.WebSocket
         public async Task<IMessage> FollowupAsync(string text = null, bool isTTS = false, Embed embed = null, InteractionResponseType type = InteractionResponseType.ChannelMessageWithSource,
                                                   AllowedMentions allowedMentions = null, RequestOptions options = null)
         {
-            if (type == InteractionResponseType.ACKWithSource || type == InteractionResponseType.ACKWithSource || type == InteractionResponseType.Pong)
+            if (type == InteractionResponseType.Pong)
                 throw new InvalidOperationException($"Cannot use {Type} on a send message function");
 
             if (!IsValidToken)
@@ -195,7 +192,6 @@ namespace Discord.WebSocket
             };
             
             return await InteractionHelper.SendFollowupAsync(Discord.Rest, args, Token, Channel, options);
-            
         }
 
         /// <summary>
@@ -208,7 +204,12 @@ namespace Discord.WebSocket
         {
             var response = new InteractionResponse
             {
-                Type = InteractionResponseType.ACKWithSource,
+                Type = InteractionResponseType.DeferredChannelMessageWithSource,
+                Data = new InteractionApplicationCommandCallbackData
+                {
+                    Content = @"Ignore this ¯\_(ツ)_/¯",
+                    Flags = 64
+                }
             };
 
             await Discord.Rest.ApiClient.CreateInteractionResponse(response, Id, Token, options).ConfigureAwait(false);
