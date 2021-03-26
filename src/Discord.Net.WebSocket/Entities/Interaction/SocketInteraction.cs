@@ -194,23 +194,23 @@ namespace Discord.WebSocket
             return await InteractionHelper.SendFollowupAsync(Discord.Rest, args, Token, Channel, options);
         }
 
-        /// <summary>
-        ///     Acknowledges this interaction with the <see cref="InteractionResponseType.ACKWithSource"/>.
-        /// </summary>
         /// <returns>
-        ///     A task that represents the asynchronous operation of acknowledging the interaction.
+        ///     A task that represents the asynchronous operation of deferring the interaction.
         /// </returns>
-        public async Task AcknowledgeAsync(RequestOptions options = null)
+        public async Task DeferAsync(int? flags = null, RequestOptions options = null)
         {
             var response = new InteractionResponse
             {
-                Type = InteractionResponseType.DeferredChannelMessageWithSource,
-                Data = new InteractionApplicationCommandCallbackData
-                {
-                    Content = @"Ignore this ¯\_(ツ)_/¯",
-                    Flags = 64
-                }
+                Type = InteractionResponseType.DeferredChannelMessageWithSource
             };
+
+            if (flags.HasValue)
+            {
+                response.Data = new InteractionApplicationCommandCallbackData
+                {
+                    Flags = flags.Value
+                };
+            }
 
             await Discord.Rest.ApiClient.CreateInteractionResponse(response, Id, Token, options).ConfigureAwait(false);
         }
