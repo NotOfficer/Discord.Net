@@ -12,18 +12,18 @@ namespace Discord.Commands.Builders
     /// </summary>
     public class SlashCommandBuilder
     {
-        /// <summary> 
+        /// <summary>
         ///     Returns the maximun length a commands name allowed by Discord
         /// </summary>
         public const int MaxNameLength = 32;
-        /// <summary> 
-        ///     Returns the maximum length of a commands description allowed by Discord. 
+        /// <summary>
+        ///     Returns the maximum length of a commands description allowed by Discord.
         /// </summary>
         public const int MaxDescriptionLength = 100;
-        /// <summary> 
+        /// <summary>
         ///     Returns the maximum count of command options allowed by Discord
         /// </summary>
-        public const int MaxOptionsCount = 10;
+        public const int MaxOptionsCount = 25;
 
         /// <summary>
         ///     The name of this slash command.
@@ -300,7 +300,7 @@ namespace Discord.Commands.Builders
         /// <summary>
         ///     The maximum number of choices allowed by Discord.
         /// </summary>
-        public const int MaxChoiceCount = 10;
+        public const int MaxChoiceCount = 25;
 
         private string _name;
         private string _description;
@@ -396,7 +396,7 @@ namespace Discord.Commands.Builders
         }
 
         /// <summary>
-        ///     Adds a sub 
+        ///     Adds a sub
         /// </summary>
         /// <param name="option"></param>
         /// <returns></returns>
