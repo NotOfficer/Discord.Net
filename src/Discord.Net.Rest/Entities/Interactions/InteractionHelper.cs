@@ -18,7 +18,7 @@ namespace Discord.Rest
             var entity = RestUserMessage.Create(client, channel, client.CurrentUser, model);
             return entity;
         }
-        
+
         // Global commands
         internal static async Task<RestGlobalCommand> CreateGlobalCommand(BaseDiscordClient client,
             Action<SlashCommandCreationProperties> func, RequestOptions options = null)
@@ -32,8 +32,8 @@ namespace Discord.Rest
         {
             if (args.Options.IsSpecified)
             {
-                if (args.Options.Value.Count > 10)
-                    throw new ArgumentException("Option count must be 10 or less");
+                if (args.Options.Value.Count > 25)
+                    throw new ArgumentException("Option count must be 25 or less");
             }
 
             var model = new CreateApplicationCommandParams()
@@ -56,8 +56,8 @@ namespace Discord.Rest
 
             if (args.Options.IsSpecified)
             {
-                if (args.Options.Value.Count > 10)
-                    throw new ArgumentException("Option count must be 10 or less");
+                if (args.Options.Value.Count > 25)
+                    throw new ArgumentException("Option count must be 25 or less");
             }
 
             var model = new Discord.API.Rest.ModifyApplicationCommandParams()
@@ -100,8 +100,8 @@ namespace Discord.Rest
 
             if (args.Options.IsSpecified)
             {
-                if (args.Options.Value.Count > 10)
-                    throw new ArgumentException("Option count must be 10 or less");
+                if (args.Options.Value.Count > 25)
+                    throw new ArgumentException("Option count must be 25 or less");
 
                 foreach(var item in args.Options.Value)
                 {
@@ -130,8 +130,8 @@ namespace Discord.Rest
 
             if (args.Options.IsSpecified)
             {
-                if (args.Options.Value.Count > 10)
-                    throw new ArgumentException("Option count must be 10 or less");
+                if (args.Options.Value.Count > 25)
+                    throw new ArgumentException("Option count must be 25 or less");
             }
 
             var model = new ModifyApplicationCommandParams()
@@ -171,8 +171,8 @@ namespace Discord.Rest
 
                 if (args.Options.IsSpecified)
                 {
-                    if (args.Options.Value.Count > 10)
-                        throw new ArgumentException("Option count must be 10 or less");
+                    if (args.Options.Value.Count > 25)
+                        throw new ArgumentException("Option count must be 25 or less");
 
                     foreach (var item in args.Options.Value)
                     {
@@ -212,8 +212,8 @@ namespace Discord.Rest
 
                 if (args.Options.IsSpecified)
                 {
-                    if (args.Options.Value.Count > 10)
-                        throw new ArgumentException("Option count must be 10 or less");
+                    if (args.Options.Value.Count > 25)
+                        throw new ArgumentException("Option count must be 25 or less");
 
                     foreach (var item in args.Options.Value)
                     {
