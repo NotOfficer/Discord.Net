@@ -247,42 +247,42 @@ namespace Discord.Commands.Builders
         /// <summary>
         ///     Adds an option to this slash command.
         /// </summary>
-        /// <param name="Parameter">The option to add.</param>
+        /// <param name="option">The option to add.</param>
         /// <returns>The current builder.</returns>
-        public SlashCommandBuilder AddOption(SlashCommandOptionBuilder Option)
+        public SlashCommandBuilder AddOption(SlashCommandOptionBuilder option)
         {
-            if (this.Options == null)
-                this.Options = new List<SlashCommandOptionBuilder>();
+            if (option == null)
+                throw new ArgumentNullException(nameof(option), "Option cannot be null");
 
-            if (this.Options.Count >= MaxOptionsCount)
+            if (Options == null)
+                Options = new List<SlashCommandOptionBuilder>();
+
+            if (Options.Count >= MaxOptionsCount)
                 throw new ArgumentOutOfRangeException(nameof(Options), $"Cannot have more than {MaxOptionsCount} options!");
 
-            if (Option == null)
-                throw new ArgumentNullException(nameof(Option), "Option cannot be null");
-
-            this.Options.Add(Option);
+            Options.Add(option);
             return this;
         }
         /// <summary>
         ///     Adds a collection of options to the current slash command.
         /// </summary>
-        /// <param name="Parameter">The collection of options to add.</param>
+        /// <param name="options">The collection of options to add.</param>
         /// <returns>The current builder.</returns>
-        public SlashCommandBuilder AddOptions(params SlashCommandOptionBuilder[] Options)
+        public SlashCommandBuilder AddOptions(params SlashCommandOptionBuilder[] options)
         {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options), "Options cannot be null!");
+
+            if (options.Length == 0)
+                throw new ArgumentException("Options cannot be empty!", nameof(options));
+
             if (Options == null)
-                throw new ArgumentNullException(nameof(Options), "Options cannot be null!");
+                Options = new List<SlashCommandOptionBuilder>();
 
-            if (Options.Length == 0)
-                throw new ArgumentException(nameof(Options), "Options cannot be empty!");
+            if (Options.Count + options.Length > MaxOptionsCount)
+                throw new ArgumentOutOfRangeException(nameof(options), $"Cannot have more than {MaxOptionsCount} options!");
 
-            if (this.Options == null)
-                this.Options = new List<SlashCommandOptionBuilder>();
-
-            if (this.Options.Count + Options.Length > MaxOptionsCount)
-                throw new ArgumentOutOfRangeException(nameof(Options), $"Cannot have more than {MaxOptionsCount} options!");
-
-            this.Options.AddRange(Options);
+            Options.AddRange(options);
             return this;
         }
     }
@@ -378,7 +378,7 @@ namespace Discord.Commands.Builders
             bool isSubType = this.Type == ApplicationCommandOptionType.SubCommand || this.Type == ApplicationCommandOptionType.SubCommandGroup;
 
             if (this.Type == ApplicationCommandOptionType.SubCommandGroup && (Options == null || !Options.Any()))
-                throw new ArgumentException(nameof(Options), "SubCommandGroups must have at least one option");
+                throw new ArgumentException("SubCommandGroups must have at least one option", nameof(Options));
 
             if (!isSubType && (Options != null && Options.Any()))
                 throw new ArgumentException(nameof(Options), $"Cannot have options on {Type} type");
