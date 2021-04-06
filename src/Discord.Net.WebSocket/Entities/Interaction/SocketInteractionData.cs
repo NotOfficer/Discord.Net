@@ -16,13 +16,7 @@ namespace Discord.WebSocket
         /// </summary>
         public IReadOnlyCollection<SocketInteractionDataOption> Options { get; private set; }
 
-        private ulong _guildId;
-
-        internal SocketInteractionData(DiscordSocketClient client, ulong id)
-            : base(client, id)
-        {
-
-        }
+        internal SocketInteractionData(DiscordSocketClient client, ulong id) : base(client, id) { }
 
         internal static SocketInteractionData Create(DiscordSocketClient client, Model model, ulong guildId)
         {
@@ -33,8 +27,6 @@ namespace Discord.WebSocket
         internal void Update(Model model, ulong guildId)
         {
             Name = model.Name;
-            _guildId = guildId;
-
             Options = model.Options.IsSpecified
                 ? model.Options.Value.Select(x => new SocketInteractionDataOption(x, Discord, guildId)).ToImmutableArray().ToReadOnlyCollection()
                 : null;

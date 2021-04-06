@@ -22,20 +22,17 @@ namespace Discord.WebSocket
         /// <summary>
         ///     The <see cref="SocketGuild"/> this interaction was used in.
         /// </summary>
-        public SocketGuild Guild
-            => Discord.GetGuild(GuildId);
+        public SocketGuild Guild => Discord.GetGuild(GuildId);
 
         /// <summary>
         ///     The <see cref="SocketTextChannel"/> this interaction was used in.
         /// </summary>
-        public SocketTextChannel Channel
-            => Guild.GetTextChannel(ChannelId);
+        public SocketTextChannel Channel => Guild.GetTextChannel(ChannelId);
 
         /// <summary>
         ///     The <see cref="SocketGuildUser"/> who triggered this interaction.
         /// </summary>
-        public SocketGuildUser Member
-            => Guild.GetUser(MemberId);
+        public SocketGuildUser User => Guild.GetUser(UserId);
 
         /// <summary>
         ///     The type of this interaction.
@@ -69,7 +66,7 @@ namespace Discord.WebSocket
 
         private ulong GuildId { get; set; }
         private ulong ChannelId { get; set; }
-        private ulong MemberId { get; set; }
+        private ulong UserId { get; set; }
 
         internal SocketInteraction(DiscordSocketClient client, ulong id) : base(client, id) { }
 
@@ -90,7 +87,7 @@ namespace Discord.WebSocket
             ChannelId = model.ChannelId;
             Token = model.Token;
             Version = model.Version;
-            MemberId = model.Member.User.Id;
+            UserId = model.Member.User.Id;
             Type = model.Type;
         }
         private bool CheckToken()

@@ -10,7 +10,7 @@ namespace Discord.Rest
 {
     internal static class InteractionHelper
     {
-        internal static async Task<RestUserMessage> SendFollowupAsync(BaseDiscordClient client, API.Rest.CreateWebhookMessageParams args,
+        internal static async Task<RestUserMessage> SendFollowupAsync(BaseDiscordClient client, CreateWebhookMessageParams args,
             string token, IMessageChannel channel, RequestOptions options = null)
         {
             var model = await client.ApiClient.CreateInteractionFollowupMessage(args, token, options).ConfigureAwait(false);
@@ -36,7 +36,7 @@ namespace Discord.Rest
                     throw new ArgumentException("Option count must be 25 or less");
             }
 
-            var model = new CreateApplicationCommandParams()
+            var model = new CreateApplicationCommandParams
             {
                 Name = args.Name,
                 Description = args.Description,
@@ -51,7 +51,7 @@ namespace Discord.Rest
         internal static async Task<RestGlobalCommand> ModifyGlobalCommand(BaseDiscordClient client, RestGlobalCommand command,
            Action<ApplicationCommandProperties> func, RequestOptions options = null)
         {
-            ApplicationCommandProperties args = new ApplicationCommandProperties();
+            var args = new ApplicationCommandProperties();
             func(args);
 
             if (args.Options.IsSpecified)
@@ -60,13 +60,13 @@ namespace Discord.Rest
                     throw new ArgumentException("Option count must be 25 or less");
             }
 
-            var model = new Discord.API.Rest.ModifyApplicationCommandParams()
+            var model = new ModifyApplicationCommandParams
             {
                 Name = args.Name,
                 Description = args.Description,
                 Options = args.Options.IsSpecified
-                    ? args.Options.Value.Select(x => new Discord.API.ApplicationCommandOption(x)).ToArray()
-                    : Optional<Discord.API.ApplicationCommandOption[]>.Unspecified
+                    ? args.Options.Value.Select(x => new ApplicationCommandOption(x)).ToArray()
+                    : Optional<ApplicationCommandOption[]>.Unspecified
             };
 
             var msg = await client.ApiClient.ModifyGlobalApplicationCommandAsync(model, command.Id, options).ConfigureAwait(false);
@@ -110,13 +110,13 @@ namespace Discord.Rest
                 }
             }
 
-            var model = new CreateApplicationCommandParams()
+            var model = new CreateApplicationCommandParams
             {
                 Name = args.Name,
                 Description = args.Description,
                 Options = args.Options.IsSpecified
-                    ? args.Options.Value.Select(x => new Discord.API.ApplicationCommandOption(x)).ToArray()
-                    : Optional<Discord.API.ApplicationCommandOption[]>.Unspecified
+                    ? args.Options.Value.Select(x => new ApplicationCommandOption(x)).ToArray()
+                    : Optional<ApplicationCommandOption[]>.Unspecified
             };
 
             var cmd = await client.ApiClient.CreateGuildApplicationCommandAsync(model, guildId, options).ConfigureAwait(false);
@@ -125,7 +125,7 @@ namespace Discord.Rest
         internal static async Task<RestGuildCommand> ModifyGuildCommand(BaseDiscordClient client, RestGuildCommand command,
            Action<ApplicationCommandProperties> func, RequestOptions options = null)
         {
-            ApplicationCommandProperties args = new ApplicationCommandProperties();
+            var args = new ApplicationCommandProperties();
             func(args);
 
             if (args.Options.IsSpecified)
@@ -134,7 +134,7 @@ namespace Discord.Rest
                     throw new ArgumentException("Option count must be 25 or less");
             }
 
-            var model = new ModifyApplicationCommandParams()
+            var model = new ModifyApplicationCommandParams
             {
                 Name = args.Name,
                 Description = args.Description,

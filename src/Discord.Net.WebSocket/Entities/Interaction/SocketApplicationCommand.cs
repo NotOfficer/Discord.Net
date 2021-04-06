@@ -33,15 +33,11 @@ namespace Discord.WebSocket
         /// <summary>
         ///     The <see cref="SocketGuild"/> where this application was created.
         /// </summary>
-        public SocketGuild Guild
-            => Discord.GetGuild(GuildId);
+        public SocketGuild Guild => Discord.GetGuild(GuildId);
         private ulong GuildId { get; set; }
 
-        internal SocketApplicationCommand(DiscordSocketClient client, ulong id)
-            : base(client, id)
-        {
+        internal SocketApplicationCommand(DiscordSocketClient client, ulong id) : base(client, id) { }
 
-        }
         internal static SocketApplicationCommand Create(DiscordSocketClient client, Model model)
         {
             var entity = new SocketApplicationCommand(client, model.Id);

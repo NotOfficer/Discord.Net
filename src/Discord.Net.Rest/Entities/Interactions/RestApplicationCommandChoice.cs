@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Model = Discord.API.ApplicationCommandOptionChoice;
 
 namespace Discord.Rest
@@ -20,8 +15,8 @@ namespace Discord.Rest
 
         internal RestApplicationCommandChoice(Model model)
         {
-            this.Name = model.Name;
-            this.Value = model.Value;
+            Name = model.Name;
+            Value = model.Value;
         }
     }
 }

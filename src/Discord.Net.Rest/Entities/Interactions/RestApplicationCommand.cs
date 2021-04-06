@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+
 using Model = Discord.API.ApplicationCommand;
 
 namespace Discord.Rest
@@ -34,33 +34,28 @@ namespace Discord.Rest
 
         /// <inheritdoc/>
         public DateTimeOffset CreatedAt
-            => SnowflakeUtils.FromSnowflake(this.Id);
+            => SnowflakeUtils.FromSnowflake(Id);
 
-        internal RestApplicationCommand(BaseDiscordClient client, ulong id)
-            : base(client, id)
-        {
-
-        }
+        internal RestApplicationCommand(BaseDiscordClient client, ulong id) : base(client, id) { }
 
         internal static RestApplicationCommand Create(BaseDiscordClient client, Model model, RestApplicationCommandType type, ulong guildId = 0)
         {
-            if (type == RestApplicationCommandType.GlobalCommand)
-                return RestGlobalCommand.Create(client, model);
-
-            if (type == RestApplicationCommandType.GuildCommand)
-                return RestGuildCommand.Create(client, model, guildId);
-
-            return null;
+            return type switch
+            {
+                RestApplicationCommandType.GlobalCommand => RestGlobalCommand.Create(client, model),
+                RestApplicationCommandType.GuildCommand => RestGuildCommand.Create(client, model, guildId),
+                _ => null
+            };
         }
 
         internal virtual void Update(Model model)
         {
-            this.ApplicationId = model.ApplicationId;
-            this.Name = model.Name;
-            this.Description = model.Description;
+            ApplicationId = model.ApplicationId;
+            Name = model.Name;
+            Description = model.Description;
 
-            this.Options = model.Options.IsSpecified
-                ? model.Options.Value.Select(x => RestApplicationCommandOption.Create(x)).ToImmutableArray().ToReadOnlyCollection()
+            Options = model.Options.IsSpecified
+                ? model.Options.Value.Select(RestApplicationCommandOption.Create).ToImmutableArray().ToReadOnlyCollection()
                 : null;
         }
 

@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+
 using Model = Discord.API.ApplicationCommand;
 
 namespace Discord.Rest
@@ -15,7 +13,7 @@ namespace Discord.Rest
         internal RestGlobalCommand(BaseDiscordClient client, ulong id)
             : base(client, id)
         {
-            this.CommandType = RestApplicationCommandType.GlobalCommand;
+            CommandType = RestApplicationCommandType.GlobalCommand;
         }
 
         internal static RestGlobalCommand Create(BaseDiscordClient client, Model model)

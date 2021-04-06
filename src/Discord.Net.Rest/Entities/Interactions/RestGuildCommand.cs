@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+
 using Model = Discord.API.ApplicationCommand;
 
 namespace Discord.Rest
@@ -15,13 +13,13 @@ namespace Discord.Rest
         /// <summary>
         ///     The guild Id where this command originates.
         /// </summary>
-        public ulong GuildId { get; set; }
+        public ulong GuildId { get; }
 
         internal RestGuildCommand(BaseDiscordClient client, ulong id, ulong guildId)
             : base(client, id)
         {
-            this.CommandType = RestApplicationCommandType.GuildCommand;
-            this.GuildId = guildId;
+            CommandType = RestApplicationCommandType.GuildCommand;
+            GuildId = guildId;
         }
 
         internal static RestGuildCommand Create(BaseDiscordClient client, Model model, ulong guildId)
