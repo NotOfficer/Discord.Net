@@ -808,7 +808,6 @@ namespace Discord.API
         public async Task<ApplicationCommand[]> CreateGlobalApplicationCommandsAsync(List<CreateApplicationCommandParams> commands, RequestOptions options = null)
         {
             Preconditions.NotNull(commands, nameof(commands));
-            Preconditions.NotEqual(commands.Count, 0, nameof(commands));
 
             foreach (var command in commands)
             {

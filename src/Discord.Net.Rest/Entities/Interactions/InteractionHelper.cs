@@ -201,7 +201,6 @@ namespace Discord.Rest
             List<SlashCommandCreationProperties> argsList, RequestOptions options = null)
         {
             Preconditions.NotNull(argsList, nameof(argsList));
-            Preconditions.NotEqual(argsList.Count, 0, nameof(argsList));
 
             var models = new List<CreateApplicationCommandParams>(argsList.Count);
 

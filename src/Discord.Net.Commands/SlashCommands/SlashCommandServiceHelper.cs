@@ -406,64 +406,6 @@ namespace Discord.SlashCommands
             // Build the commands
             var builtCommands = BuildCommands(rootModuleInfos);
 
-            /*
-            // Scan for each existing command on discord so we know what is already there.
-            var existingGuildCommands = new List<Rest.RestGuildCommand>();
-            var existingGlobalCommands = new List<Rest.RestGlobalCommand>();
-            existingGlobalCommands.AddRange(await socketClient.Rest.GetGlobalApplicationCommands().ConfigureAwait(false));
-
-            var guildIdsList = guildIds == null ? new List<ulong>(0) : guildIds.ToList();
-
-            foreach (var guildId in guildIdsList)
-            {
-                existingGuildCommands.AddRange(await socketClient.Rest.GetGuildApplicationCommands(guildId).ConfigureAwait(false));
-            }
-
-            // If we want to keep the existing commands that are already registered
-            // remove the commands that share the same name from the builtCommands list as to not overwrite.
-            if (options.ExistingCommands == ExistingCommandOptions.KEEP_EXISTING)
-            {
-                foreach (var existingCommand in existingGuildCommands)
-                {
-                    builtCommands.RemoveAll(x => (!x.Global && x.Name == existingCommand.Name));
-                }
-                foreach (var existingCommand in existingGlobalCommands)
-                {
-                    builtCommands.RemoveAll(x => (x.Global && x.Name == existingCommand.Name));
-                }
-            }
-
-            // If we want to delete commands that are not going to be re-implemented in builtCommands
-            // or if we just want a blank slate
-            if (options.OldCommands == OldCommandOptions.DELETE_UNUSED || options.OldCommands == OldCommandOptions.WIPE)
-            {
-                foreach (var existingCommand in existingGuildCommands)
-                {
-                    // If we want to wipe all GUILD commands
-                    // or if the existing command isn't re-defined and re-built
-                    // remove it from discord.
-                    if (options.OldCommands == OldCommandOptions.WIPE ||
-                        // There are no commands which contain this existing command.
-                        !builtCommands.Any(x => !x.Global && x.Name.Equals(existingCommand.Name, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        await existingCommand.DeleteAsync();
-                    }
-                }
-                foreach (var existingCommand in existingGlobalCommands)
-                {
-                    // If we want to wipe all GLOBAL commands
-                    // or if the existing command isn't re-defined and re-built
-                    // remove it from discord.
-                    if (options.OldCommands == OldCommandOptions.WIPE ||
-                        // There are no commands which contain this existing command.
-                        !builtCommands.Any(x => x.Global && x.Name.Equals(existingCommand.Name, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        await existingCommand.DeleteAsync();
-                    }
-                }
-            }
-            */
-
             var builtGlobalCommands = new List<SlashCommandCreationProperties>();
             var builtGuildCommands = new List<SlashCommandCreationProperties>();
 
@@ -474,22 +416,14 @@ namespace Discord.SlashCommands
                 if (builtCommand.Global)
                 {
                     builtGlobalCommands.Add(builtCommand);
-                    //await socketClient.Rest.CreateGlobalCommand(builtCommand).ConfigureAwait(false);
                 }
                 else
                 {
                     builtGuildCommands.Add(builtCommand);
-                    //foreach (ulong guildId in guildIds)
-                    //{
-                    //    await socketClient.Rest.CreateGuildCommand(builtCommand, guildId).ConfigureAwait(false);
-                    //}
                 }
             }
 
-            if (builtGlobalCommands.Count != 0)
-            {
-                await socketClient.Rest.CreateGlobalCommands(builtGlobalCommands).ConfigureAwait(false);
-            }
+            await socketClient.Rest.CreateGlobalCommands(builtGlobalCommands).ConfigureAwait(false);
 
             if (builtGuildCommands.Count != 0 && guildIds != null)
             {
@@ -507,9 +441,8 @@ namespace Discord.SlashCommands
         {
             var builtCommands = new List<SlashCommandCreationProperties>();
 
-            foreach (var pair in rootModuleInfos)
+            foreach (var rootModuleInfo in rootModuleInfos.Values)
             {
-                var rootModuleInfo = pair.Value;
                 builtCommands.AddRange(rootModuleInfo.BuildCommands());
             }
 
