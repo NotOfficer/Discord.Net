@@ -37,13 +37,13 @@ namespace Discord.SlashCommands.Builders
             set
             {
                 Preconditions.NotNullOrEmpty(value, nameof(Name));
-                Preconditions.AtLeast(value.Length, 3, nameof(Name));
+                Preconditions.AtLeast(value.Length, 2, nameof(Name));
                 Preconditions.AtMost(value.Length, MaxNameLength, nameof(Name));
 
                 // Discord updated the docs, this regex prevents special characters like @!$%(... etc,
                 // https://discord.com/developers/docs/interactions/slash-commands#applicationcommand
-                if (!Regex.IsMatch(value, @"^[\w-]{3,32}$"))
-                    throw new ArgumentException("Command name cannot contian any special characters or whitespaces!");
+                if (!Regex.IsMatch(value, @"^[\w-]{2,32}$"))
+                    throw new ArgumentException("Command name cannot contain any special characters or whitespaces!");
 
                 _name = value;
             }
