@@ -25,7 +25,7 @@ namespace Discord.SlashCommands
         /// <param name="description">The description of this slash command.</param>
         public SlashCommand(string name, string description = "No description.")
         {
-            Name = name.ToLower();
+            Name = name.ToLowerInvariant();
             Description = description;
         }
     }

@@ -15,6 +15,10 @@ namespace Discord.Commands.Builders
         /// </summary>
         public const int MaxNameLength = 32;
         /// <summary>
+        ///     Returns the minimum length a commands name allowed by Discord
+        /// </summary>
+        public const int MinNameLength = 2;
+        /// <summary>
         ///     Returns the maximum length of a commands description allowed by Discord.
         /// </summary>
         public const int MaxDescriptionLength = 100;
@@ -35,12 +39,12 @@ namespace Discord.Commands.Builders
             set
             {
                 Preconditions.NotNullOrEmpty(value, nameof(Name));
-                Preconditions.AtLeast(value.Length, 3, nameof(Name));
+                Preconditions.AtLeast(value.Length, MinNameLength, nameof(Name));
                 Preconditions.AtMost(value.Length, MaxNameLength, nameof(Name));
 
                 // Discord updated the docs, this regex prevents special characters like @!$%(... etc,
                 // https://discord.com/developers/docs/interactions/slash-commands#applicationcommand
-                if (!Regex.IsMatch(value, @"^[\w-]{3,32}$"))
+                if (!Regex.IsMatch(value, @$"^[\w-]{{{MinNameLength},{MaxNameLength}}}$"))
                     throw new ArgumentException("Command name cannot contian any special characters or whitespaces!");
 
                 _name = value;
@@ -185,12 +189,12 @@ namespace Discord.Commands.Builders
         {
             // Make sure the name matches the requirements from discord
             Preconditions.NotNullOrEmpty(name, nameof(name));
-            Preconditions.AtLeast(name.Length, 3, nameof(name));
+            Preconditions.AtLeast(name.Length, MinNameLength, nameof(name));
             Preconditions.AtMost(name.Length, MaxNameLength, nameof(name));
 
             // Discord updated the docs, this regex prevents special characters like @!$%( and s p a c e s.. etc,
             // https://discord.com/developers/docs/interactions/slash-commands#applicationcommand
-            if (!Regex.IsMatch(name, @"^[\w-]{3,32}$"))
+            if (!Regex.IsMatch(name, @$"^[\w-]{{{MinNameLength},{MaxNameLength}}}$"))
                 throw new ArgumentException("Command name cannot contian any special characters or whitespaces!", nameof(name));
 
             // same with description
@@ -373,7 +377,7 @@ namespace Discord.Commands.Builders
         /// <returns>The build version of this option</returns>
         public ApplicationCommandOptionProperties Build()
         {
-            var isSubType = Type == ApplicationCommandOptionType.SubCommand || Type == ApplicationCommandOptionType.SubCommandGroup;
+            var isSubType = Type is ApplicationCommandOptionType.SubCommand or ApplicationCommandOptionType.SubCommandGroup;
 
             if (Type == ApplicationCommandOptionType.SubCommandGroup && (Options == null || !Options.Any()))
                 throw new ArgumentException("SubCommandGroups must have at least one option", nameof(Options));
