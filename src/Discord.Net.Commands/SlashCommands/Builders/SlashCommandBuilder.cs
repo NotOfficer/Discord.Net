@@ -315,12 +315,12 @@ namespace Discord.Commands.Builders
                     throw new ArgumentNullException(nameof(value), "Name must not be null or empty");
                 if (value.Length > SlashCommandBuilder.MaxNameLength)
                     throw new ArgumentException("Name length must be less than or equal to 32");
-                if(value.Length < 3)
-                    throw new ArgumentException("Name length must at least 3 characters in length");
+                if (value.Length < 2)
+                    throw new ArgumentException("Name length must be at least 2 characters in length");
 
                 // Discord updated the docs, this regex prevents special characters like @!$%(... etc,
                 // https://discord.com/developers/docs/interactions/slash-commands#applicationcommand
-                if (!Regex.IsMatch(value, @"^[\w-]{3,32}$"))
+                if (!Regex.IsMatch(value, @"^[\w-]{2,32}$"))
                     throw new ArgumentException("Option name cannot contian any special characters or whitespaces!");
 
                 _name = value;
