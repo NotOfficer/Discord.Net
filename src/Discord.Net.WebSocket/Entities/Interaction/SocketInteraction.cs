@@ -114,7 +114,6 @@ namespace Discord.WebSocket
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">Message content is too long, length must be less or equal to <see cref="DiscordConfig.MaxMessageSize"/>.</exception>
         /// <exception cref="InvalidOperationException">The parameters provided were invalid or the token was invalid.</exception>
-
         public async Task<IMessage> RespondAsync(string text = null, bool isTTS = false, Embed embed = null, InteractionResponseType type = InteractionResponseType.ChannelMessageWithSource, AllowedMentions allowedMentions = null, RequestOptions options = null)
         {
             if (type == InteractionResponseType.Pong)
@@ -155,7 +154,7 @@ namespace Discord.WebSocket
                 }
             };
 
-            await Discord.Rest.ApiClient.CreateInteractionResponse(response, Id, Token, options);
+            await Discord.Rest.ApiClient.CreateInteractionResponse(response, Id, Token, options).ConfigureAwait(false);
             return null;
         }
 
@@ -181,7 +180,7 @@ namespace Discord.WebSocket
             if (allowedMentions != null)
                 args.AllowedMentions = allowedMentions.ToModel();
 
-            return await InteractionHelper.SendFollowupAsync(Discord.Rest, args, Token, Channel, options);
+            return await InteractionHelper.SendFollowupAsync(Discord.Rest, args, Token, Channel, options).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -209,7 +208,7 @@ namespace Discord.WebSocket
             if (allowedMentions != null)
                 args.AllowedMentions = allowedMentions.ToModel();
 
-            return await InteractionHelper.SendFollowupAsync(Discord.Rest, args, Token, Channel, options);
+            return await InteractionHelper.SendFollowupAsync(Discord.Rest, args, Token, Channel, options).ConfigureAwait(false);
         }
 
         /// <summary> Sends a message to the channel for this webhook with an attachment. </summary>
@@ -246,7 +245,7 @@ namespace Discord.WebSocket
             if (allowedMentions != null)
                 args.AllowedMentions = allowedMentions.ToModel();
 
-            return await InteractionHelper.SendFollowupFileAsync(Discord.Rest, args, Token, Channel, options);
+            return await InteractionHelper.SendFollowupFileAsync(Discord.Rest, args, Token, Channel, options).ConfigureAwait(false);
         }
 
         /// <returns>
