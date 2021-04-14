@@ -19,6 +19,15 @@ namespace Discord.Rest
             return entity;
         }
 
+        internal static async Task<RestUserMessage> SendFollowupFileAsync(BaseDiscordClient client, UploadWebhookFileParams args,
+            string token, IMessageChannel channel, RequestOptions options = null)
+        {
+            var model = await client.ApiClient.CreateInteractionFollowupFileMessage(args, token, options).ConfigureAwait(false);
+
+            var entity = RestUserMessage.Create(client, channel, client.CurrentUser, model);
+            return entity;
+        }
+
         // Global commands
         internal static async Task<RestGlobalCommand> CreateGlobalCommand(BaseDiscordClient client,
             Action<SlashCommandCreationProperties> func, RequestOptions options = null)

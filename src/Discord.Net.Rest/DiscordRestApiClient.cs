@@ -983,6 +983,25 @@ namespace Discord.API
             await SendAsync("DELETE", () => $"webhooks/{CurrentUserId}/{token}/messages/{id}", new BucketIds(), options: options).ConfigureAwait(false);
         }
 
+        public async Task<Message> CreateInteractionFollowupFileMessage(UploadWebhookFileParams args, string token, RequestOptions options = null)
+        {
+            Preconditions.NotNull(args, nameof(args));
+
+            if (args.Content.GetValueOrDefault(null) == null)
+                args.Content = "";
+            else if (args.Content.IsSpecified)
+            {
+                if (args.Content.Value == null)
+                    args.Content = "";
+                if (args.Content.Value?.Length > DiscordConfig.MaxMessageSize)
+                    throw new ArgumentOutOfRangeException($"Message content is too long, length must be less or equal to {DiscordConfig.MaxMessageSize}.", nameof(args.Content));
+            }
+
+            options = RequestOptions.CreateOrClone(options);
+
+            return await SendMultipartAsync<Message>("POST", () => $"webhooks/{CurrentUserId}/{token}?wait=true", args.ToDictionary(), new BucketIds(), ClientBucketType.SendEdit, options).ConfigureAwait(false);
+        }
+
         //Guilds
         public async Task<Guild> GetGuildAsync(ulong guildId, bool withCounts, RequestOptions options = null)
         {
