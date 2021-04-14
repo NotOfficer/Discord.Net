@@ -17,11 +17,15 @@ namespace Discord.Commands.Builders
         /// <summary>
         ///     Returns the minimum length a commands name allowed by Discord
         /// </summary>
-        public const int MinNameLength = 2;
+        public const int MinNameLength = 1;
         /// <summary>
         ///     Returns the maximum length of a commands description allowed by Discord.
         /// </summary>
         public const int MaxDescriptionLength = 100;
+        /// <summary>
+        ///     Returns the minimum length of a commands description allowed by Discord.
+        /// </summary>
+        public const int MinDescriptionLength = 1;
         /// <summary>
         ///     Returns the maximum count of command options allowed by Discord
         /// </summary>
@@ -32,10 +36,7 @@ namespace Discord.Commands.Builders
         /// </summary>
         public string Name
         {
-            get
-            {
-                return _name;
-            }
+            get => _name;
             set
             {
                 Preconditions.NotNullOrEmpty(value, nameof(Name));
@@ -45,7 +46,7 @@ namespace Discord.Commands.Builders
                 // Discord updated the docs, this regex prevents special characters like @!$%(... etc,
                 // https://discord.com/developers/docs/interactions/slash-commands#applicationcommand
                 if (!Regex.IsMatch(value, @$"^[\w-]{{{MinNameLength},{MaxNameLength}}}$"))
-                    throw new ArgumentException("Command name cannot contian any special characters or whitespaces!");
+                    throw new ArgumentException("Command names cannot contian any special characters or whitespaces!");
 
                 _name = value;
             }
@@ -56,13 +57,16 @@ namespace Discord.Commands.Builders
         /// </summary>
         public string Description
         {
-            get
-            {
-                return _description;
-            }
+            get => _description;
             set
             {
-                Preconditions.AtLeast(value.Length, 1, nameof(Description));
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    _description = null;
+                    return;
+                }
+
+                Preconditions.AtLeast(value.Length, MinDescriptionLength, nameof(Description));
                 Preconditions.AtMost(value.Length, MaxDescriptionLength, nameof(Description));
 
                 _description = value;
@@ -71,10 +75,7 @@ namespace Discord.Commands.Builders
 
         public ulong GuildId
         {
-            get
-            {
-                return _guildId ?? 0;
-            }
+            get => _guildId ?? 0;
             set
             {
                 if (value == 0)
@@ -93,10 +94,7 @@ namespace Discord.Commands.Builders
         /// </summary>
         public List<SlashCommandOptionBuilder> Options
         {
-            get
-            {
-                return _options;
-            }
+            get => _options;
             set
             {
                 if (value != null && value.Count > MaxOptionsCount)
@@ -112,7 +110,6 @@ namespace Discord.Commands.Builders
         private List<SlashCommandOptionBuilder> _options { get; set; }
 
         internal bool isGlobal { get; set; }
-
 
         public SlashCommandCreationProperties Build()
         {
@@ -291,10 +288,13 @@ namespace Discord.Commands.Builders
     public class SlashCommandOptionBuilder
     {
         /// <summary>
-        ///     The max length of a choice's name allowed by Discord.
+        ///     Returns the maximun length a commands choice name allowed by Discord
         /// </summary>
-        public const int ChoiceNameMaxLength = 100;
-
+        public const int MaxChoiceNameLength = 100;
+        /// <summary>
+        ///     Returns the minimum length a commands choice name allowed by Discord
+        /// </summary>
+        public const int MinChoiceNameLength = 1;
         /// <summary>
         ///     The maximum number of choices allowed by Discord.
         /// </summary>
@@ -311,17 +311,14 @@ namespace Discord.Commands.Builders
             get => _name;
             set
             {
-                if (string.IsNullOrWhiteSpace(value))
-                    throw new ArgumentNullException(nameof(value), "Name must not be null or empty");
-                if (value.Length > SlashCommandBuilder.MaxNameLength)
-                    throw new ArgumentException("Name length must be less than or equal to 32");
-                if(value.Length < 3)
-                    throw new ArgumentException("Name length must at least 3 characters in length");
+                Preconditions.NotNullOrEmpty(value, nameof(Name));
+                Preconditions.AtLeast(value.Length, SlashCommandBuilder.MinNameLength, nameof(Name));
+                Preconditions.AtMost(value.Length, SlashCommandBuilder.MaxNameLength, nameof(Name));
 
                 // Discord updated the docs, this regex prevents special characters like @!$%(... etc,
-                // https://discord.com/developers/docs/interactions/slash-commands#applicationcommand
-                if (!Regex.IsMatch(value, @"^[\w-]{3,32}$"))
-                    throw new ArgumentException("Option name cannot contian any special characters or whitespaces!");
+                // https://discord.com/developers/docs/interactions/slash-commands#applicationcommandoption
+                if (!Regex.IsMatch(value, @$"^[\w-]{{{SlashCommandBuilder.MinNameLength},{SlashCommandBuilder.MaxNameLength}}}$"))
+                    throw new ArgumentException("Command choice names cannot contian any special characters or whitespaces!");
 
                 _name = value;
             }
@@ -336,11 +333,13 @@ namespace Discord.Commands.Builders
             set
             {
                 if (string.IsNullOrWhiteSpace(value))
+                {
+                    _description = null;
                     return;
-                if (value.Length > SlashCommandBuilder.MaxDescriptionLength)
-                    throw new ArgumentException("Description length must be less than or equal to 100");
-                if (value.Length < 1)
-                    throw new ArgumentException("Name length must at least 1 character in length");
+                }
+
+                Preconditions.AtLeast(value.Length, SlashCommandBuilder.MinDescriptionLength, nameof(Description));
+                Preconditions.AtMost(value.Length, SlashCommandBuilder.MaxDescriptionLength, nameof(Description));
 
                 _description = value;
             }
