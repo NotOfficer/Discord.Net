@@ -85,8 +85,8 @@ namespace Discord.Commands.Builders
 
                 _guildId = value;
 
-                if (isGlobal)
-                    isGlobal = false;
+                if (IsGlobal)
+                    IsGlobal = false;
             }
         }
         /// <summary>
@@ -109,7 +109,7 @@ namespace Discord.Commands.Builders
         private string _description { get; set; }
         private List<SlashCommandOptionBuilder> _options { get; set; }
 
-        internal bool isGlobal { get; set; }
+        internal bool IsGlobal { get; set; }
 
         public SlashCommandCreationProperties Build()
         {
@@ -138,7 +138,7 @@ namespace Discord.Commands.Builders
         /// <returns>The current builder.</returns>
         public SlashCommandBuilder MakeGlobal()
         {
-            isGlobal = true;
+            IsGlobal = true;
             return this;
         }
 
@@ -181,8 +181,8 @@ namespace Discord.Commands.Builders
         /// <param name="options">The options of the option to add.</param>
         /// <param name="choices">The choices of this option.</param>
         /// <returns>The current builder.</returns>
-        public SlashCommandBuilder AddOption(string name, ApplicationCommandOptionType type,
-           string description, bool required = true, bool isDefault = false, List<SlashCommandOptionBuilder> options = null, params ApplicationCommandOptionChoiceProperties[] choices)
+        public SlashCommandBuilder AddOption(string name, ApplicationCommandOptionType type, string description, bool required = true,
+            bool isDefault = false, List<SlashCommandOptionBuilder> options = null, params ApplicationCommandOptionChoiceProperties[] choices)
         {
             // Make sure the name matches the requirements from discord
             Preconditions.NotNullOrEmpty(name, nameof(name));
@@ -259,6 +259,7 @@ namespace Discord.Commands.Builders
             Options.Add(option);
             return this;
         }
+
         /// <summary>
         ///     Adds a collection of options to the current slash command.
         /// </summary>
@@ -430,6 +431,7 @@ namespace Discord.Commands.Builders
 
             return this;
         }
+
         public SlashCommandOptionBuilder AddChoice(string name, string value)
         {
             Choices ??= new List<ApplicationCommandOptionChoiceProperties>();
@@ -469,6 +471,7 @@ namespace Discord.Commands.Builders
             Default = value;
             return this;
         }
+
         public SlashCommandOptionBuilder WithType(ApplicationCommandOptionType type)
         {
             Type = type;

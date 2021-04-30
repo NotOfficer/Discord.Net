@@ -1,6 +1,4 @@
-using Discord.WebSocket;
 using System;
-using System.Threading.Tasks;
 
 namespace Discord.SlashCommands
 {
@@ -17,15 +15,6 @@ namespace Discord.SlashCommands
         {
             var newValue = interaction as T;
             Interaction = newValue ?? throw new InvalidOperationException($"Invalid interaction type. Expected {typeof(T).Name}, got {interaction.GetType().Name}.");
-        }
-
-        public async Task<IMessage> Reply(string text = null, Embed embed = null, bool isTTS = false, AllowedMentions allowedMentions = null, RequestOptions options = null)
-        {
-            if (Interaction is SocketInteraction interaction)
-            {
-                return await interaction.FollowupAsync(text, embed, isTTS, allowedMentions, options);
-            }
-            return null;
         }
     }
 }

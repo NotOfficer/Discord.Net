@@ -1,8 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Discord
 {
@@ -24,7 +20,7 @@ namespace Discord
         /// <summary>
         ///     If the command should be defined as a global command.
         /// </summary>
-        public bool Global { get; set; } = false;
+        public bool Global { get; set; }
 
         /// <summary>
         ///     Gets or sets the options for this command.

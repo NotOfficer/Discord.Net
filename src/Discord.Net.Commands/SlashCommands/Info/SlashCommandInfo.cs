@@ -76,17 +76,22 @@ namespace Discord.SlashCommands
         /// <param name="interaction">SocketInteraction</param>
         public async Task<IResult> ExecuteAsync(IReadOnlyCollection<SocketInteractionDataOption> data, SocketInteraction interaction)
         {
-            // List of arguments to be passed to the Delegate
-            var args = new List<object>();
+            // Array of arguments to be passed to the Delegate
+            var args = new object[Parameters.Count];
 
             try
             {
-                foreach (var parameter in Parameters)
+                // For each parameter to try find its coresponding DataOption based on the name.
+                // !!! names from `data` will always be lowercase regardless if we defined the command with any
+                // number of upercase letters !!!
+                for (var i = 0; i < Parameters.Count; i++)
                 {
-                    // For each parameter to try find its coresponding DataOption based on the name.
-                    // !!! names from `data` will always be lowercase regardless if we defined the command with any
-                    // number of upercase letters !!!
-                    args.Add(TryGetInteractionDataOption(data, parameter.Name, out var dataOption) ? parameter.Parse(dataOption) : null);
+                    var parameter = Parameters[i];
+
+                    if (TryGetInteractionDataOption(data, parameter.Name, out var dataOption))
+                    {
+                        args[i] = parameter.Parse(dataOption);
+                    }
                 }
             }
             catch (Exception e)
@@ -115,7 +120,7 @@ namespace Discord.SlashCommands
 
             });
 
-            return await callback.Invoke(args.ToArray()).ConfigureAwait(false);
+            return await callback.Invoke(args).ConfigureAwait(false);
         }
         /// <summary>
         /// Get the interaction data from the name of the parameter we want to fill in.

@@ -108,17 +108,18 @@ namespace Discord.WebSocket
         /// <param name="embed">A <see cref="Embed"/> to send with this response.</param>
         /// <param name="type">The type of response to this Interaction.</param>
         /// <param name="allowedMentions">The allowed mentions for this response.</param>
+        /// <param name="flags"></param>
         /// <param name="options">The request options for this response.</param>
         /// <returns>
         ///     The <see cref="IMessage"/> sent as the response. If this is the first acknowledgement, it will return null.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">Message content is too long, length must be less or equal to <see cref="DiscordConfig.MaxMessageSize"/>.</exception>
         /// <exception cref="InvalidOperationException">The parameters provided were invalid or the token was invalid.</exception>
-        public async Task<IMessage> RespondAsync(string text = null, bool isTTS = false, Embed embed = null, InteractionResponseType type = InteractionResponseType.ChannelMessageWithSource, AllowedMentions allowedMentions = null, RequestOptions options = null)
+        public async Task<IMessage> RespondAsync(string text = null, bool isTTS = false, Embed embed = null, InteractionResponseType type = InteractionResponseType.ChannelMessageWithSource,
+            AllowedMentions allowedMentions = null, int? flags = null, RequestOptions options = null)
         {
             if (type == InteractionResponseType.Pong)
                 throw new InvalidOperationException($"Cannot use {Type} on a send message function");
-
             if (!IsValidToken)
                 throw new InvalidOperationException("Interaction token is no longer valid");
 
@@ -141,19 +142,19 @@ namespace Discord.WebSocket
                 }
             }
 
+            var callbackData = new InteractionApplicationCommandCallbackData(text) { TTS = isTTS };
+            if (allowedMentions != null)
+                callbackData.AllowedMentions = allowedMentions.ToModel();
+            if (embed != null)
+                callbackData.Embeds = new[] { embed.ToModel() };
+            if (flags.HasValue)
+                callbackData.Flags = flags.Value;
+
             var response = new InteractionResponse
             {
                 Type = type,
-                Data = new InteractionApplicationCommandCallbackData(text)
-                {
-                    AllowedMentions = allowedMentions?.ToModel(),
-                    Embeds = embed != null
-                        ? new[] { embed.ToModel() }
-                        : Optional<API.Embed[]>.Unspecified,
-                    TTS = isTTS
-                }
+                Data = callbackData
             };
-
             await Discord.Rest.ApiClient.CreateInteractionResponse(response, Id, Token, options).ConfigureAwait(false);
             return null;
         }
@@ -165,11 +166,13 @@ namespace Discord.WebSocket
         /// <param name="embed">A <see cref="Embed"/> to send with this response.</param>
         /// <param name="isTTS"><see langword="true"/> if the message should be read out by a text-to-speech reader, otherwise <see langword="false"/>.</param>
         /// <param name="allowedMentions">The allowed mentions for this response.</param>
+        /// <param name="flags"></param>
         /// <param name="options">The request options for this response.</param>
         /// <returns>
         ///     The sent message.
         /// </returns>
-        public async Task<IMessage> FollowupAsync(string text = null, Embed embed = null, bool isTTS = false, AllowedMentions allowedMentions = null, RequestOptions options = null)
+        public async Task<IMessage> FollowupAsync(string text = null, Embed embed = null, bool isTTS = false, AllowedMentions allowedMentions = null,
+            int? flags = null, RequestOptions options = null)
         {
             if (!IsValidToken)
                 throw new InvalidOperationException("Interaction token is no longer valid");
@@ -179,6 +182,8 @@ namespace Discord.WebSocket
                 args.Embeds = new[] { embed.ToModel() };
             if (allowedMentions != null)
                 args.AllowedMentions = allowedMentions.ToModel();
+            if (flags.HasValue)
+                args.Flags = flags.Value;
 
             return await InteractionHelper.SendFollowupAsync(Discord.Rest, args, Token, Channel, options).ConfigureAwait(false);
         }
@@ -190,23 +195,24 @@ namespace Discord.WebSocket
         /// <param name="embeds">A <see cref="Embed"/> to send with this response.</param>
         /// <param name="isTTS"><see langword="true"/> if the message should be read out by a text-to-speech reader, otherwise <see langword="false"/>.</param>
         /// <param name="allowedMentions">The allowed mentions for this response.</param>
+        /// <param name="flags"></param>
         /// <param name="options">The request options for this response.</param>
         /// <returns>
         ///     The sent message.
         /// </returns>
-        public async Task<IMessage> FollowupEmbedsAsync(IEnumerable<Embed> embeds, string text = null, bool isTTS = false, AllowedMentions allowedMentions = null, RequestOptions options = null)
+        public async Task<IMessage> FollowupEmbedsAsync(IEnumerable<Embed> embeds, string text = null, bool isTTS = false, AllowedMentions allowedMentions = null,
+            int? flags = null, RequestOptions options = null)
         {
             if (!IsValidToken)
                 throw new InvalidOperationException("Interaction token is no longer valid");
 
-            var args = new CreateWebhookMessageParams(text)
-            {
-                IsTTS = isTTS
-            };
+            var args = new CreateWebhookMessageParams(text) { IsTTS = isTTS };
             if (embeds != null)
                 args.Embeds = embeds.Select(x => x.ToModel()).ToArray();
             if (allowedMentions != null)
                 args.AllowedMentions = allowedMentions.ToModel();
+            if (flags.HasValue)
+                args.Flags = flags.Value;
 
             return await InteractionHelper.SendFollowupAsync(Discord.Rest, args, Token, Channel, options).ConfigureAwait(false);
         }
@@ -215,25 +221,25 @@ namespace Discord.WebSocket
         /// <returns> Returns the ID of the created message. </returns>
         public Task<IMessage> FollowupFileAsync(string filePath, string text = null, bool isTTS = false,
             IEnumerable<Embed> embeds = null, string username = null, string avatarUrl = null,
-            RequestOptions options = null, bool isSpoiler = false, AllowedMentions allowedMentions = null)
-            => FollowupFileAsyncInternal(filePath, text, isTTS, embeds, username, avatarUrl, allowedMentions, options, isSpoiler);
+            RequestOptions options = null, bool isSpoiler = false, AllowedMentions allowedMentions = null, int? flags = null)
+            => FollowupFileAsyncInternal(filePath, text, isTTS, embeds, username, avatarUrl, allowedMentions, options, isSpoiler, flags);
         /// <summary> Sends a message to the channel for this webhook with an attachment. </summary>
         /// <returns> Returns the ID of the created message. </returns>
         public Task<IMessage> FollowupFileAsync(Stream stream, string filename, string text = null, bool isTTS = false,
             IEnumerable<Embed> embeds = null, string username = null, string avatarUrl = null,
-            RequestOptions options = null, bool isSpoiler = false, AllowedMentions allowedMentions = null)
-            => FollowupFileAsyncInternal(stream, filename, text, isTTS, embeds, username, avatarUrl, allowedMentions, options, isSpoiler);
+            RequestOptions options = null, bool isSpoiler = false, AllowedMentions allowedMentions = null, int? flags = null)
+            => FollowupFileAsyncInternal(stream, filename, text, isTTS, embeds, username, avatarUrl, allowedMentions, options, isSpoiler, flags);
 
         private async Task<IMessage> FollowupFileAsyncInternal(string filePath, string text, bool isTTS, IEnumerable<Embed> embeds,
-            string username, string avatarUrl, AllowedMentions allowedMentions, RequestOptions options, bool isSpoiler)
+            string username, string avatarUrl, AllowedMentions allowedMentions, RequestOptions options, bool isSpoiler, int? flags)
         {
             var filename = Path.GetFileName(filePath);
             await using var file = File.OpenRead(filePath);
-            return await FollowupFileAsyncInternal(file, filename, text, isTTS, embeds, username, avatarUrl, allowedMentions, options, isSpoiler).ConfigureAwait(false);
+            return await FollowupFileAsyncInternal(file, filename, text, isTTS, embeds, username, avatarUrl, allowedMentions, options, isSpoiler, flags).ConfigureAwait(false);
         }
 
         private async Task<IMessage> FollowupFileAsyncInternal(Stream stream, string filename, string text, bool isTTS, IEnumerable<Embed> embeds,
-            string username, string avatarUrl, AllowedMentions allowedMentions, RequestOptions options, bool isSpoiler)
+            string username, string avatarUrl, AllowedMentions allowedMentions, RequestOptions options, bool isSpoiler, int? flags)
         {
             var args = new UploadWebhookFileParams(stream) { Filename = filename, Content = text, IsTTS = isTTS, IsSpoiler = isSpoiler };
             if (username != null)
@@ -244,6 +250,8 @@ namespace Discord.WebSocket
                 args.Embeds = embeds.Select(x => x.ToModel()).ToArray();
             if (allowedMentions != null)
                 args.AllowedMentions = allowedMentions.ToModel();
+            if (flags.HasValue)
+                args.Flags = flags.Value;
 
             return await InteractionHelper.SendFollowupFileAsync(Discord.Rest, args, Token, Channel, options).ConfigureAwait(false);
         }
