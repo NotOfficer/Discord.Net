@@ -124,6 +124,11 @@ namespace Discord.Rest
         public Task<RestGuildCommand[]> CreateGuildCommands(List<SlashCommandCreationProperties> properties, ulong guildId, RequestOptions options = null)
             => InteractionHelper.CreateGuildCommands(this, guildId, properties, options);
 
+        public Task AddRoleAsync(ulong guildId, ulong userId, ulong roleId)
+            => ClientHelper.AddRoleAsync(this, guildId, userId, roleId);
+        public Task RemoveRoleAsync(ulong guildId, ulong userId, ulong roleId)
+            => ClientHelper.RemoveRoleAsync(this, guildId, userId, roleId);
+
         public Task AddReactionAsync(ulong channelId, ulong messageId, IEmote emote, RequestOptions options = null)
             => MessageHelper.AddReactionAsync(channelId, messageId, emote, this, options);
         public Task RemoveReactionAsync(ulong channelId, ulong messageId, ulong userId, IEmote emote, RequestOptions options = null)
