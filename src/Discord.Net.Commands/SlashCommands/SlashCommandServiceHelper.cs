@@ -13,22 +13,14 @@ namespace Discord.SlashCommands
 {
     internal static class SlashCommandServiceHelper
     {
-        private static readonly Type _slashCommandModuleType = typeof(ISlashCommandModule);
-        private static readonly Type _commandGroupType = typeof(CommandGroup);
-        private static readonly Type _globalType = typeof(Global);
-        private static readonly Type _requiredType = typeof(Required);
-        private static readonly Type _descriptionType = typeof(Description);
-        private static readonly Type _choiceType = typeof(Choice);
-        private static readonly Type _slashCommandType = typeof(SlashCommand);
-        private static readonly Type _parameterNameType = typeof(ParameterName);
-        private static readonly Type _intType = typeof(int);
-        private static readonly Type _intNullableType = typeof(int?);
-        private static readonly Type _stringType = typeof(string);
-        private static readonly Type _boolType = typeof(int);
-        private static readonly Type _boolNullableType = typeof(int?);
-        private static readonly Type _guildChannelType = typeof(IGuildChannel);
-        private static readonly Type _rolelType = typeof(IRole);
-        private static readonly Type _guildUserType = typeof(IGuildUser);
+        private static readonly Type SlashCommandModuleType = typeof(ISlashCommandModule);
+        private static readonly Type CommandGroupType = typeof(CommandGroup);
+        private static readonly Type GlobalType = typeof(Global);
+        private static readonly Type RequiredType = typeof(Required);
+        private static readonly Type DescriptionType = typeof(Description);
+        private static readonly Type ChoiceType = typeof(Choice);
+        private static readonly Type SlashCommandType = typeof(SlashCommand);
+        private static readonly Type ParameterNameType = typeof(ParameterName);
 
         /// <summary>
         /// Get all of the valid user-defined slash command modules 
@@ -57,9 +49,9 @@ namespace Discord.SlashCommands
             // See if the base type (SlashCommandInfo<T>) implements interface ISlashCommandModule
             return !typeInfo.IsAbstract && !typeInfo.ContainsGenericParameters
                    //&& typeInfo.BaseType.GetInterfaces().Any(n => n == SlashCommandModuleType)
-                   && _slashCommandModuleType.IsAssignableFrom(typeInfo)
+                   && SlashCommandModuleType.IsAssignableFrom(typeInfo)
                    //&& typeInfo.IsAssignableFrom(SlashcommandmoduleType)
-                   && !typeInfo.GetCustomAttributes(_commandGroupType).Any();
+                   && !typeInfo.GetCustomAttributes(CommandGroupType).Any();
         }
 
         /// <summary>
@@ -126,7 +118,7 @@ namespace Discord.SlashCommands
                 return false;
             }
 
-            var commandGroupAttributes = module.GetCustomAttributes(_commandGroupType);
+            var commandGroupAttributes = module.GetCustomAttributes(CommandGroupType);
             var groupAttributes = commandGroupAttributes as Attribute[] ?? commandGroupAttributes.ToArray();
 
             switch (groupAttributes.Length)
@@ -145,7 +137,7 @@ namespace Discord.SlashCommands
         public static bool IsCommandModuleGlobal(Type userModuleType)
         {
             // Verify that we only have one [Global] attribute
-            var slashCommandAttributes = userModuleType.GetCustomAttributes(_globalType);
+            var slashCommandAttributes = userModuleType.GetCustomAttributes(GlobalType);
             var slashCommandAttributesCount = slashCommandAttributes.Count();
 
             if (slashCommandAttributesCount > 1)
@@ -208,9 +200,6 @@ namespace Discord.SlashCommands
                 //Delegate delegateMethod = CreateDelegate(commandMethod, moduleInfo.userCommandModule);
                 var commandInfo = new SlashCommandInfo(
                     moduleInfo,
-                    #if DEBUG
-                    "test" +
-                    #endif
                     slashCommand.Name,
                     slashCommand.Description,
                     // Generate the parameters. Due to it's complicated way the algorithm has been moved to its own function.
@@ -233,7 +222,7 @@ namespace Discord.SlashCommands
         private static bool IsValidSlashCommand(MemberInfo method, out SlashCommand slashCommand)
         {
             // Verify that we only have one [SlashCommand(...)] attribute
-            var slashCommandAttributes = method.GetCustomAttributes(_slashCommandType);
+            var slashCommandAttributes = method.GetCustomAttributes(SlashCommandType);
             var commandAttributes = slashCommandAttributes as Attribute[] ?? slashCommandAttributes.ToArray();
 
             switch (commandAttributes.Length)
@@ -257,7 +246,7 @@ namespace Discord.SlashCommands
         private static bool IsCommandGlobal(MemberInfo method)
         {
             // Verify that we only have one [Global] attribute
-            var slashCommandAttributes = method.GetCustomAttributes(_globalType);
+            var slashCommandAttributes = method.GetCustomAttributes(GlobalType);
             var slashCommandAttributesCount = slashCommandAttributes.Count();
 
             if (slashCommandAttributesCount > 1)
@@ -285,7 +274,7 @@ namespace Discord.SlashCommands
 
                 // Test for the [ParameterName] Attribute. If we have it, then use that as the name,
                 // if not just use the parameter name as the option name.
-                var customNameAttributes = methodParameter.GetCustomAttributes(_parameterNameType);
+                var customNameAttributes = methodParameter.GetCustomAttributes(ParameterNameType);
                 var nameAttributes = customNameAttributes as Attribute[] ?? customNameAttributes.ToArray();
                 newParameter.Name = nameAttributes.Length switch
                 {
@@ -299,7 +288,7 @@ namespace Discord.SlashCommands
                 // 0 -> then use the default description
                 // 1 -> Use the value from that attribute
                 // 2+ -> Throw an error. This shouldn't normaly happen, but we check for sake of sanity
-                var descriptionAttributes = methodParameter.GetCustomAttributes(_descriptionType);
+                var descriptionAttributes = methodParameter.GetCustomAttributes(DescriptionType);
                 var descriptions = descriptionAttributes as Attribute[] ?? descriptionAttributes.ToArray();
                 newParameter.Description = descriptions.Length switch
                 {
@@ -317,7 +306,7 @@ namespace Discord.SlashCommands
                 newParameter.Nullable = GetNullableStatus(methodParameter);
 
                 // Test for the [Required] Attribute
-                var requiredAttributes = methodParameter.GetCustomAttributes(_requiredType);
+                var requiredAttributes = methodParameter.GetCustomAttributes(RequiredType);
                 var requiredCount = requiredAttributes.Count();
                 newParameter.Required = requiredCount switch
                 {
@@ -328,7 +317,7 @@ namespace Discord.SlashCommands
 
                 // Test for the [Choice] Attribute
                 // A parameter cna have multiple Choice attributes, and for each we're going to add it's key-value pair.
-                foreach (var attribute in methodParameter.GetCustomAttributes(_choiceType))
+                foreach (var attribute in methodParameter.GetCustomAttributes(ChoiceType))
                 {
                     var choice = (Choice)attribute;
 
@@ -361,17 +350,17 @@ namespace Discord.SlashCommands
         /// </summary>
         private static ApplicationCommandOptionType TypeFromMethodParameter(ParameterInfo methodParameter)
         {
-            if (methodParameter.ParameterType == _intType || methodParameter.ParameterType == _intNullableType)
+            if (methodParameter.ParameterType == typeof(int) || methodParameter.ParameterType == typeof(int?))
                 return ApplicationCommandOptionType.Integer;
-            if (methodParameter.ParameterType == _stringType)
+            if (methodParameter.ParameterType == typeof(string))
                 return ApplicationCommandOptionType.String;
-            if (methodParameter.ParameterType == _boolType || methodParameter.ParameterType == _boolNullableType)
+            if (methodParameter.ParameterType == typeof(bool) || methodParameter.ParameterType == typeof(bool?))
                 return ApplicationCommandOptionType.Boolean;
-            if (methodParameter.ParameterType.IsAssignableFrom(_guildChannelType))
+            if (methodParameter.ParameterType == typeof(SocketGuildChannel))
                 return ApplicationCommandOptionType.Channel;
-            if (methodParameter.ParameterType.IsAssignableFrom(_rolelType))
+            if (methodParameter.ParameterType == typeof(SocketRole))
                 return ApplicationCommandOptionType.Role;
-            if (methodParameter.ParameterType.IsAssignableFrom(_guildUserType))
+            if (methodParameter.ParameterType == typeof(SocketGuildUser))
                 return ApplicationCommandOptionType.User;
 
             throw new Exception($"Got parameter type other than int, string, bool, guild, role, or user. {methodParameter.Name}");
@@ -383,7 +372,7 @@ namespace Discord.SlashCommands
         /// </summary>
         private static bool GetNullableStatus(ParameterInfo methodParameter)
         {
-            return methodParameter.ParameterType == _intNullableType || methodParameter.ParameterType == _boolNullableType;
+            return methodParameter.ParameterType == typeof(int?) || methodParameter.ParameterType == typeof(bool?);
         }
 
         /// <summary>
