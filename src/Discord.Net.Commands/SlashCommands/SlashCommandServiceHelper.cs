@@ -24,8 +24,8 @@ namespace Discord.SlashCommands
         private static readonly Type _intType = typeof(int);
         private static readonly Type _intNullableType = typeof(int?);
         private static readonly Type _stringType = typeof(string);
-        private static readonly Type _boolType = typeof(int);
-        private static readonly Type _boolNullableType = typeof(int?);
+        private static readonly Type _boolType = typeof(bool);
+        private static readonly Type _boolNullableType = typeof(bool?);
         private static readonly Type _guildChannelType = typeof(IGuildChannel);
         private static readonly Type _rolelType = typeof(IRole);
         private static readonly Type _guildUserType = typeof(IGuildUser);
