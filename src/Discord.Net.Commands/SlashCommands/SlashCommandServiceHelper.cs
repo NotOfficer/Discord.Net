@@ -1,3 +1,4 @@
+using Discord.Logging;
 using Discord.WebSocket;
 
 using System;
@@ -408,7 +409,7 @@ namespace Discord.SlashCommands
                 : Delegate.CreateDelegate(getType(types.ToArray()), target, methodInfo.Name);
         }
 
-        public static async Task RegisterCommands(DiscordSocketClient socketClient, Dictionary<Type, SlashModuleInfo> rootModuleInfos, IEnumerable<ulong> guildIds/*, CommandRegistrationOptions options*/)
+        public static async Task RegisterCommands(DiscordSocketClient socketClient, Dictionary<Type, SlashModuleInfo> rootModuleInfos, IEnumerable<ulong> guildIds, Logger logger)
         {
             // TODO: see how we should handle if user wants to register two commands with the same name, one global and one not.
             // Build the commands
@@ -431,13 +432,27 @@ namespace Discord.SlashCommands
                 }
             }
 
-            await socketClient.Rest.CreateGlobalCommands(builtGlobalCommands).ConfigureAwait(false);
+            try
+            {
+                await socketClient.Rest.CreateGlobalCommands(builtGlobalCommands).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                await logger.LogAsync(LogSeverity.Error, "Failed to bulk create global commands", ex).ConfigureAwait(false);
+            }
 
             if (builtGuildCommands.Count != 0 && guildIds != null)
             {
                 foreach (var guildId in guildIds)
                 {
-                    await socketClient.Rest.CreateGuildCommands(builtGuildCommands, guildId).ConfigureAwait(false);
+                    try
+                    {
+                        await socketClient.Rest.CreateGuildCommands(builtGuildCommands, guildId).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        await logger.LogAsync(LogSeverity.Error, $"Failed to bulk create guild commands for guild id '{guildId}'", ex).ConfigureAwait(false);
+                    }
                 }
             }
         }

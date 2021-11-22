@@ -12,11 +12,6 @@ namespace Discord
     public interface IApplicationCommand : ISnowflakeEntity
     {
         /// <summary>
-        ///     Gets the unique id of the command.
-        /// </summary>
-        ulong Id { get; }
-
-        /// <summary>
         ///     Gets the unique id of the parent application.
         /// </summary>
         ulong ApplicationId { get; }

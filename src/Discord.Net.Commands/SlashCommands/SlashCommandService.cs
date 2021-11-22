@@ -112,7 +112,7 @@ namespace Discord.SlashCommands
         /// <summary>
         /// Registers with discord all previously scanned commands.
         /// </summary>
-        public async Task RegisterCommandsAsync(DiscordSocketClient socketClient, IEnumerable<ulong> guildIDs = null/*, CommandRegistrationOptions registrationOptions*/)
+        public async Task RegisterCommandsAsync(DiscordSocketClient socketClient, IEnumerable<ulong> guildIDs = null)
         {
             // First take a hold of the module lock, as to make sure we aren't editing stuff while we do our business
             await _moduleLock.WaitAsync().ConfigureAwait(false);
@@ -120,7 +120,7 @@ namespace Discord.SlashCommands
             try
             {
                 // Build and register all of the commands.
-                await SlashCommandServiceHelper.RegisterCommands(socketClient, ModuleDefs, guildIDs/*, registrationOptions*/).ConfigureAwait(false);
+                await SlashCommandServiceHelper.RegisterCommands(socketClient, ModuleDefs, guildIDs, Logger).ConfigureAwait(false);
             }
             finally
             {

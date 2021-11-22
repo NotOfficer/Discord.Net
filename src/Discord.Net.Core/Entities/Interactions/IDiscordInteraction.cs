@@ -16,11 +16,6 @@ namespace Discord
     public interface IDiscordInteraction : ISnowflakeEntity
     {
         /// <summary>
-        ///     The id of the interaction.
-        /// </summary>
-        ulong Id { get; }
-
-        /// <summary>
         /// 
         /// </summary>
         IGuild Guild { get; }
@@ -33,7 +28,7 @@ namespace Discord
         /// <summary>
         ///     The command data payload.
         /// </summary>
-        IApplicationCommandInteractionData? Data { get; }
+        IApplicationCommandInteractionData Data { get; }
 
         /// <summary>
         ///     A continuation token for responding to the interaction.
