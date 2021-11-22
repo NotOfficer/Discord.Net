@@ -119,8 +119,7 @@ namespace Discord.Webhook
             var apiArgs = new ModifyWebhookParams
             {
                 Avatar = args.Image.IsSpecified ? args.Image.Value?.ToModel() : Optional.Create<ImageModel?>(),
-                Name = args.Name,
-                ChannelId = args.ChannelId
+                Name = args.Name
             };
 
             if (!apiArgs.Avatar.IsSpecified && client.Webhook.AvatarId != null)

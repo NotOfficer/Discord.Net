@@ -22,7 +22,6 @@ namespace Discord.API.Rest
         public Optional<string> AvatarUrl { get; set; }
         public Optional<Embed[]> Embeds { get; set; }
         public Optional<AllowedMentions> AllowedMentions { get; set; }
-        public Optional<int> Flags { get; set; }
 
         public bool IsSpoiler { get; set; } = false;
 
@@ -55,8 +54,6 @@ namespace Discord.API.Rest
                 payload["embeds"] = Embeds.Value;
             if (AllowedMentions.IsSpecified)
                 payload["allowed_mentions"] = AllowedMentions.Value;
-            if (Flags.IsSpecified)
-                payload["flags"] = Flags.Value;
 
             var json = new StringBuilder();
             using (var text = new StringWriter(json))

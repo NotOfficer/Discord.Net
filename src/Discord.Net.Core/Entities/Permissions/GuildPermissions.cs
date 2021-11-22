@@ -58,8 +58,6 @@ namespace Discord
         public bool MentionEveryone => Permissions.GetValue(RawValue, GuildPermission.MentionEveryone);
         /// <summary> If <c>true</c>, a user may use custom emoji from other guilds. </summary>
         public bool UseExternalEmojis => Permissions.GetValue(RawValue, GuildPermission.UseExternalEmojis);
-        // <summary> If <c>true</c>, a user may use slash commands. </summary>
-        public bool UseSlashCommands => Permissions.GetValue(RawValue, GuildPermission.UseSlashCommands);
 
         /// <summary> If <c>true</c>, a user may connect to a voice channel. </summary>
         public bool Connect => Permissions.GetValue(RawValue, GuildPermission.Connect);
@@ -111,7 +109,6 @@ namespace Discord
             bool? readMessageHistory = null,
             bool? mentionEveryone = null,
             bool? useExternalEmojis = null,
-            bool? useSlashCommands = null,
             bool? connect = null,
             bool? speak = null,
             bool? muteMembers = null,
@@ -146,7 +143,6 @@ namespace Discord
             Permissions.SetValue(ref value, readMessageHistory, GuildPermission.ReadMessageHistory);
             Permissions.SetValue(ref value, mentionEveryone, GuildPermission.MentionEveryone);
             Permissions.SetValue(ref value, useExternalEmojis, GuildPermission.UseExternalEmojis);
-            Permissions.SetValue(ref value, useSlashCommands, GuildPermission.UseSlashCommands);
             Permissions.SetValue(ref value, connect, GuildPermission.Connect);
             Permissions.SetValue(ref value, speak, GuildPermission.Speak);
             Permissions.SetValue(ref value, muteMembers, GuildPermission.MuteMembers);
@@ -184,7 +180,6 @@ namespace Discord
             bool readMessageHistory = false,
             bool mentionEveryone = false,
             bool useExternalEmojis = false,
-            bool useSlashCommands = false,
             bool connect = false,
             bool speak = false,
             bool muteMembers = false,
@@ -218,7 +213,6 @@ namespace Discord
                 readMessageHistory: readMessageHistory,
                 mentionEveryone: mentionEveryone,
                 useExternalEmojis: useExternalEmojis,
-                useSlashCommands: useSlashCommands,
                 connect: connect,
                 speak: speak,
                 muteMembers: muteMembers,
@@ -253,7 +247,6 @@ namespace Discord
             bool? readMessageHistory = null,
             bool? mentionEveryone = null,
             bool? useExternalEmojis = null,
-            bool? useSlashCommands = null,
             bool? connect = null,
             bool? speak = null,
             bool? muteMembers = null,
@@ -269,7 +262,7 @@ namespace Discord
             bool? manageEmojis = null)
             => new GuildPermissions(RawValue, createInstantInvite, kickMembers, banMembers, administrator, manageChannels, manageGuild, addReactions,
                 viewAuditLog, viewGuildInsights, viewChannel, sendMessages, sendTTSMessages, manageMessages, embedLinks, attachFiles,
-                readMessageHistory, mentionEveryone, useExternalEmojis, useSlashCommands, connect, speak, muteMembers, deafenMembers, moveMembers,
+                readMessageHistory, mentionEveryone, useExternalEmojis, connect, speak, muteMembers, deafenMembers, moveMembers,
                 useVoiceActivation, prioritySpeaker, stream, changeNickname, manageNicknames, manageRoles, manageWebhooks, manageEmojis);
 
         /// <summary>
@@ -297,7 +290,6 @@ namespace Discord
                 if ((RawValue & flag) != 0)
                     perms.Add((GuildPermission)flag);
             }
-
             return perms;
         }
 
