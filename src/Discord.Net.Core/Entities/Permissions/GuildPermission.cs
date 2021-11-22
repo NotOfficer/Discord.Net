@@ -57,28 +57,20 @@ namespace Discord
         ViewGuildInsights   = 0x00080000,
 
         // Text
-        /// <summary>
-        ///     Allows for the addition of reactions to messages.
-        /// </summary>
-        AddReactions        = 0x00000040,
-        /// <summary>
-        ///     Allows for viewing of audit logs.
-        /// </summary>
-        ViewAuditLog        = 0x00000080,
-        [Obsolete("Use ViewChannel instead.")]
-        ReadMessages        = ViewChannel,
-        /// <summary>
-        ///     Allows guild members to view a channel, which includes reading messages in text channels.
-        /// </summary>
-        ViewChannel         = 0x00000400,
-        /// <summary>
-        ///     Allows for sending messages in a channel.
-        /// </summary>
-        SendMessages        = 0x00000800,
-        /// <summary>
-        ///     Allows for sending of text-to-speech messages.
-        /// </summary>
-        SendTTSMessages     = 0x00001000,
+		/// <summary>
+		///     Allows for the addition of reactions to messages.
+		/// </summary>
+        AddReactions        = 0x00_00_00_40,
+		/// <summary>
+		///		Allows for viewing of audit logs.
+		/// </summary>
+        ViewAuditLog        = 0x00_00_00_80,
+        ViewChannel         = 0x00_00_04_00,
+        SendMessages        = 0x00_00_08_00,
+		/// <summary>
+		///     Allows for sending of text-to-speech messages.
+		/// </summary>
+        SendTTSMessages     = 0x00_00_10_00,
         /// <summary>
         ///     Allows for deletion of other users messages.
         /// </summary>
