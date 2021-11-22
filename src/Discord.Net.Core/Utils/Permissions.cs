@@ -17,10 +17,9 @@ namespace Discord
         {
             if (HasFlag(allow, flag))
                 return PermValue.Allow;
-            else if (HasFlag(deny, flag))
+            if (HasFlag(deny, flag))
                 return PermValue.Deny;
-            else
-                return PermValue.Inherit;
+            return PermValue.Inherit;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -112,9 +111,9 @@ namespace Discord
         }*/
         public static ulong ResolveChannel(IGuild guild, IGuildUser user, IGuildChannel channel, ulong guildPermissions)
         {
-            ulong resolvedPermissions = 0;
-
             ulong mask = ChannelPermissions.All(channel).RawValue;
+            ulong resolvedPermissions;
+
             if (GetValue(guildPermissions, GuildPermission.Administrator)) //Includes owner
                 resolvedPermissions = mask; //Owners and administrators always have all permissions
             else
@@ -147,7 +146,7 @@ namespace Discord
                 //Give/Take User permissions
                 perms = channel.GetPermissionOverwrite(user);
                 if (perms != null)
-                    resolvedPermissions = (resolvedPermissions  & ~perms.Value.DenyValue) | perms.Value.AllowValue;
+                    resolvedPermissions = (resolvedPermissions & ~perms.Value.DenyValue) | perms.Value.AllowValue;
 
                 if (channel is ITextChannel)
                 {

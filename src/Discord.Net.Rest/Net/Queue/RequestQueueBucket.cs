@@ -6,6 +6,7 @@ using System.Diagnostics;
 #endif
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -106,9 +107,26 @@ namespace Discord.Net.Queue
                                         using (var reader = new StreamReader(response.Stream))
                                         using (var jsonReader = new JsonTextReader(reader))
                                         {
-                                            var json = JToken.Load(jsonReader);
-                                            try { code = json.Value<int>("code"); } catch { };
-                                            try { reason = json.Value<string>("message"); } catch { };
+                                            try
+                                            {
+                                                var json = await JToken.LoadAsync(jsonReader).ConfigureAwait(false);
+                                                try { code = json.Value<int>("code"); } catch { }
+                                                try { reason = json.Value<string>("message"); } catch { }
+                                            }
+                                            catch
+                                            {
+                                                if (response.StatusCode == HttpStatusCode.RequestEntityTooLarge)
+                                                {
+                                                    code = 40005;
+                                                    reason = "The server responded with error 40005: Request entity too large";
+                                                }
+                                                else
+                                                {
+                                                    code = (int)response.StatusCode;
+                                                    if (response.Stream is MemoryStream ms)
+                                                        reason = Encoding.UTF8.GetString(ms.ToArray());
+                                                }
+                                            }
                                         }
                                     }
                                     catch { }
