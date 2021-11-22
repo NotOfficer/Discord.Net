@@ -6,7 +6,5 @@ namespace Discord.API
     {
         [JsonProperty("code")]
         public string Code { get; set; }
-        [JsonProperty("uses")]
-        public int Uses { get; set; }
     }
 }

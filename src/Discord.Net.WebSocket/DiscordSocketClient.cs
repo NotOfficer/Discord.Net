@@ -43,7 +43,8 @@ namespace Discord.WebSocket
         private DateTimeOffset? _statusSince;
         private RestApplication _applicationInfo;
         private bool _isDisposed;
-        private GatewayIntents _gatewayIntents;
+        private bool _guildSubscriptions;
+        private GatewayIntents? _gatewayIntents;
 
         /// <summary>
         ///     Provides access to a REST-only client with a shared state from this client.
@@ -71,6 +72,7 @@ namespace Discord.WebSocket
         internal WebSocketProvider WebSocketProvider { get; private set; }
         internal bool AlwaysDownloadUsers { get; private set; }
         internal int? HandlerTimeout { get; private set; }
+        internal bool? ExclusiveBulkDelete { get; private set; }
 
         internal new DiscordSocketApiClient ApiClient => base.ApiClient as DiscordSocketApiClient;
         /// <inheritdoc />
@@ -107,6 +109,9 @@ namespace Discord.WebSocket
         /// </returns>
         public IReadOnlyCollection<SocketGroupChannel> GroupChannels
             => State.PrivateChannels.OfType<SocketGroupChannel>().ToImmutableArray();
+        /// <inheritdoc />
+        [Obsolete("This property is obsolete, use the GetVoiceRegionsAsync method instead.")]
+        public override IReadOnlyCollection<RestVoiceRegion> VoiceRegions => GetVoiceRegionsAsync().GetAwaiter().GetResult();
 
         /// <summary>
         ///     Initializes a new REST/WebSocket-based Discord client.
@@ -131,9 +136,11 @@ namespace Discord.WebSocket
             WebSocketProvider = config.WebSocketProvider;
             AlwaysDownloadUsers = config.AlwaysDownloadUsers;
             HandlerTimeout = config.HandlerTimeout;
+            ExclusiveBulkDelete = config.ExclusiveBulkDelete;
             State = new ClientState(0, 0);
             Rest = new DiscordSocketRestClient(config, ApiClient);
             _heartbeatTimes = new ConcurrentQueue<long>();
+            _guildSubscriptions = config.GuildSubscriptions;
             _gatewayIntents = config.GatewayIntents;
 
             _stateLock = new SemaphoreSlim(1, 1);
@@ -175,7 +182,8 @@ namespace Discord.WebSocket
             _largeGuilds = new ConcurrentQueue<ulong>();
         }
         private static API.DiscordSocketApiClient CreateApiClient(DiscordSocketConfig config)
-            => new API.DiscordSocketApiClient(config.RestClientProvider, config.WebSocketProvider, DiscordRestConfig.UserAgent, config.GatewayHost);
+            => new API.DiscordSocketApiClient(config.RestClientProvider, config.WebSocketProvider, DiscordRestConfig.UserAgent, config.GatewayHost,
+                rateLimitPrecision: config.RateLimitPrecision);
         /// <inheritdoc />
         internal override void Dispose(bool disposing)
         {
@@ -193,6 +201,11 @@ namespace Discord.WebSocket
             base.Dispose(disposing);
         }
 
+        /// <inheritdoc />
+        internal override async Task OnLoginAsync(TokenType tokenType, string token)
+        {
+            await Rest.OnLoginAsync(tokenType, token);
+        }
         /// <inheritdoc />
         internal override async Task OnLogoutAsync()
         {
@@ -230,7 +243,7 @@ namespace Discord.WebSocket
                 else
                 {
                     await _gatewayLogger.DebugAsync("Identifying").ConfigureAwait(false);
-                    await ApiClient.SendIdentifyAsync(shardID: ShardId, totalShards: TotalShards, gatewayIntents: _gatewayIntents, presence: BuildCurrentStatus()).ConfigureAwait(false);
+                    await ApiClient.SendIdentifyAsync(shardID: ShardId, totalShards: TotalShards, guildSubscriptions: _guildSubscriptions, gatewayIntents: _gatewayIntents, presence: BuildCurrentStatus()).ConfigureAwait(false);
                 }
             }
             finally
@@ -289,51 +302,13 @@ namespace Discord.WebSocket
         public override SocketChannel GetChannel(ulong id)
             => State.GetChannel(id);
         /// <summary>
-        ///     Gets a generic channel from the cache or does a rest request if unavailable.
-        /// </summary>
-        /// <example>
-        ///     <code language="cs" title="Example method">
-        ///     var channel = await _client.GetChannelAsync(381889909113225237);
-        ///     if (channel != null &amp;&amp; channel is IMessageChannel msgChannel)
-        ///     {
-        ///         await msgChannel.SendMessageAsync($"{msgChannel} is created at {msgChannel.CreatedAt}");
-        ///     }
-        ///     </code>
-        /// </example>
-        /// <param name="id">The snowflake identifier of the channel (e.g. `381889909113225237`).</param>
-        /// <param name="options">The options to be used when sending the request.</param>
-        /// <returns>
-        ///     A task that represents the asynchronous get operation. The task result contains the channel associated
-        ///     with the snowflake identifier; <c>null</c> when the channel cannot be found.
-        /// </returns>
-        public async ValueTask<IChannel> GetChannelAsync(ulong id, RequestOptions options = null)
-            => GetChannel(id) ?? (IChannel)await ClientHelper.GetChannelAsync(this, id, options).ConfigureAwait(false);
-        /// <summary>
-        ///     Gets a user from the cache or does a rest request if unavailable.
-        /// </summary>
-        /// <example>
-        ///     <code language="cs" title="Example method">
-        ///     var user = await _client.GetUserAsync(168693960628371456);
-        ///     if (user != null)
-        ///         Console.WriteLine($"{user} is created at {user.CreatedAt}.";
-        ///     </code>
-        /// </example>
-        /// <param name="id">The snowflake identifier of the user (e.g. `168693960628371456`).</param>
-        /// <param name="options">The options to be used when sending the request.</param>
-        /// <returns>
-        ///     A task that represents the asynchronous get operation. The task result contains the user associated with
-        ///     the snowflake identifier; <c>null</c> if the user is not found.
-        /// </returns>
-        public async ValueTask<IUser> GetUserAsync(ulong id, RequestOptions options = null)
-            => await ClientHelper.GetUserAsync(this, id, options).ConfigureAwait(false);
-        /// <summary>
         ///     Clears all cached channels from the client.
         /// </summary>
         public void PurgeChannelCache() => State.PurgeAllChannels();
         /// <summary>
         ///     Clears cached DM channels from the client.
         /// </summary>
-        public void PurgeDMChannelCache() => RemoveDMChannels();
+        public void PurgeDMChannelCache() => State.PurgeDMChannels();
 
         /// <inheritdoc />
         public override SocketUser GetUser(ulong id)
@@ -347,11 +322,12 @@ namespace Discord.WebSocket
         public void PurgeUserCache() => State.PurgeUsers();
         internal SocketGlobalUser GetOrCreateUser(ClientState state, Discord.API.User model)
         {
-            return state.GetOrAddUser(model.Id, x => SocketGlobalUser.Create(this, state, model));
-        }
-        internal SocketUser GetOrCreateTemporaryUser(ClientState state, Discord.API.User model)
-        {
-            return state.GetUser(model.Id) ?? (SocketUser)SocketUnknownUser.Create(this, state, model);
+            return state.GetOrAddUser(model.Id, x =>
+            {
+                var user = SocketGlobalUser.Create(this, state, model);
+                user.GlobalUser.AddRef();
+                return user;
+            });
         }
         internal SocketGlobalUser GetOrCreateSelfUser(ClientState state, Discord.API.User model)
         {
@@ -359,12 +335,17 @@ namespace Discord.WebSocket
             {
                 var user = SocketGlobalUser.Create(this, state, model);
                 user.GlobalUser.AddRef();
-                user.Presence = new SocketPresence(UserStatus.Online, null, null);
+                user.Presence = new SocketPresence(UserStatus.Online, null, null, null);
                 return user;
             });
         }
         internal void RemoveUser(ulong id)
             => State.RemoveUser(id);
+
+        /// <inheritdoc />
+        [Obsolete("This method is obsolete, use GetVoiceRegionAsync instead.")]
+        public override RestVoiceRegion GetVoiceRegion(string id)
+            => GetVoiceRegionAsync(id).GetAwaiter().GetResult();
 
         /// <inheritdoc />
         public override async ValueTask<IReadOnlyCollection<RestVoiceRegion>> GetVoiceRegionsAsync(RequestOptions options = null)
@@ -488,8 +469,7 @@ namespace Discord.WebSocket
         {
             if (CurrentUser == null)
                 return;
-            var activities = _activity.IsSpecified ? ImmutableList.Create(_activity.Value) : null;
-            CurrentUser.Presence = new SocketPresence(Status, null, activities);
+            CurrentUser.Presence = new SocketPresence(Status, Activity, null, null);
 
             var presence = BuildCurrentStatus() ?? (UserStatus.Online, false, null, null);
 
@@ -584,7 +564,7 @@ namespace Discord.WebSocket
                                 await _shardedClient.AcquireIdentifyLockAsync(ShardId, _connection.CancelToken).ConfigureAwait(false);
                                 try
                                 {
-                                    await ApiClient.SendIdentifyAsync(shardID: ShardId, totalShards: TotalShards, gatewayIntents: _gatewayIntents, presence: BuildCurrentStatus()).ConfigureAwait(false);
+                                    await ApiClient.SendIdentifyAsync(shardID: ShardId, totalShards: TotalShards, guildSubscriptions: _guildSubscriptions, gatewayIntents: _gatewayIntents, presence: BuildCurrentStatus()).ConfigureAwait(false);
                                 }
                                 finally
                                 {
@@ -592,7 +572,7 @@ namespace Discord.WebSocket
                                 }
                             }
                             else
-                                await ApiClient.SendIdentifyAsync(shardID: ShardId, totalShards: TotalShards, gatewayIntents: _gatewayIntents, presence: BuildCurrentStatus()).ConfigureAwait(false);
+                                await ApiClient.SendIdentifyAsync(shardID: ShardId, totalShards: TotalShards, guildSubscriptions: _guildSubscriptions, gatewayIntents: _gatewayIntents, presence: BuildCurrentStatus()).ConfigureAwait(false);
                         }
                         break;
                     case GatewayOpCode.Reconnect:
@@ -615,10 +595,8 @@ namespace Discord.WebSocket
                                         var state = new ClientState(data.Guilds.Length, data.PrivateChannels.Length);
 
                                         var currentUser = SocketSelfUser.Create(this, state, data.User);
-                                        var activities = _activity.IsSpecified ? ImmutableList.Create(_activity.Value) : null;
-                                        currentUser.Presence = new SocketPresence(Status, null, activities);
+                                        currentUser.Presence = new SocketPresence(Status, Activity, null, null);
                                         ApiClient.CurrentUserId = currentUser.Id;
-                                        Rest.CurrentUser = RestSelfUser.Create(this, data.User);
                                         int unavailableGuilds = 0;
                                         for (int i = 0; i < data.Guilds.Length; i++)
                                         {
@@ -771,8 +749,7 @@ namespace Discord.WebSocket
                                 break;
                             case "GUILD_SYNC":
                                 {
-                                    await _gatewayLogger.DebugAsync("Ignored Dispatch (GUILD_SYNC)").ConfigureAwait(false);
-                                    /*await _gatewayLogger.DebugAsync("Received Dispatch (GUILD_SYNC)").ConfigureAwait(false); //TODO remove? userbot related
+                                    await _gatewayLogger.DebugAsync("Received Dispatch (GUILD_SYNC)").ConfigureAwait(false);
                                     var data = (payload as JToken).ToObject<GuildSyncEvent>(_serializer);
                                     var guild = State.GetGuild(data.Id);
                                     if (guild != null)
@@ -789,7 +766,7 @@ namespace Discord.WebSocket
                                     {
                                         await UnknownGuildAsync(type, data.Id).ConfigureAwait(false);
                                         return;
-                                    }*/
+                                    }
                                 }
                                 break;
                             case "GUILD_DELETE":
@@ -989,15 +966,15 @@ namespace Discord.WebSocket
 
                                             var before = user.Clone();
                                             user.Update(State, data);
-
-                                            var cacheableBefore = new Cacheable<SocketGuildUser, ulong>(before, user.Id, true, () => Task.FromResult((SocketGuildUser)null));
-                                            await TimedInvokeAsync(_guildMemberUpdatedEvent, nameof(GuildMemberUpdated), cacheableBefore, user).ConfigureAwait(false);
+                                            await TimedInvokeAsync(_guildMemberUpdatedEvent, nameof(GuildMemberUpdated), before, user).ConfigureAwait(false);
                                         }
                                         else
                                         {
-                                            user = guild.AddOrUpdateUser(data);
-                                            var cacheableBefore = new Cacheable<SocketGuildUser, ulong>(null, user.Id, false, () => Task.FromResult((SocketGuildUser)null));
-                                            await TimedInvokeAsync(_guildMemberUpdatedEvent, nameof(GuildMemberUpdated), cacheableBefore, user).ConfigureAwait(false);
+                                            if (!guild.HasAllMembers)
+                                                await IncompleteGuildUserAsync(type, data.User.Id, data.GuildId).ConfigureAwait(false);
+                                            else
+                                                await UnknownGuildUserAsync(type, data.User.Id, data.GuildId).ConfigureAwait(false);
+                                            return;
                                         }
                                     }
                                     else
@@ -1260,63 +1237,56 @@ namespace Discord.WebSocket
                                     await _gatewayLogger.DebugAsync("Received Dispatch (MESSAGE_CREATE)").ConfigureAwait(false);
 
                                     var data = (payload as JToken).ToObject<API.Message>(_serializer);
-                                    var channel = GetChannel(data.ChannelId) as ISocketMessageChannel;
-
-                                    var guild = (channel as SocketGuildChannel)?.Guild;
-                                    if (guild != null && !guild.IsSynced)
+                                    if (State.GetChannel(data.ChannelId) is ISocketMessageChannel channel)
                                     {
-                                        await UnsyncedGuildAsync(type, guild.Id).ConfigureAwait(false);
-                                        return;
-                                    }
-
-                                    if (channel == null)
-                                    {
-                                        if (!data.GuildId.IsSpecified)  // assume it is a DM
+                                        var guild = (channel as SocketGuildChannel)?.Guild;
+                                        if (guild != null && !guild.IsSynced)
                                         {
-                                            channel = CreateDMChannel(data.ChannelId, data.Author.Value, State);
-                                        }
-                                        else
-                                        {
-                                            await UnknownChannelAsync(type, data.ChannelId).ConfigureAwait(false);
+                                            await UnsyncedGuildAsync(type, guild.Id).ConfigureAwait(false);
                                             return;
                                         }
-                                    }
 
-                                    SocketUser author;
-                                    if (guild != null)
-                                    {
-                                        if (data.WebhookId.IsSpecified)
-                                            author = SocketWebhookUser.Create(guild, State, data.Author.Value, data.WebhookId.Value);
-                                        else
-                                            author = guild.GetUser(data.Author.Value.Id);
-                                    }
-                                    else
-                                        author = (channel as SocketChannel).GetUser(data.Author.Value.Id);
-
-                                    if (author == null)
-                                    {
+                                        SocketUser author;
                                         if (guild != null)
                                         {
-                                            if (data.Member.IsSpecified) // member isn't always included, but use it when we can
-                                            {
-                                                data.Member.Value.User = data.Author.Value;
-                                                author = guild.AddOrUpdateUser(data.Member.Value);
-                                            }
+                                            if (data.WebhookId.IsSpecified)
+                                                author = SocketWebhookUser.Create(guild, State, data.Author.Value, data.WebhookId.Value);
                                             else
-                                                author = guild.AddOrUpdateUser(data.Author.Value); // user has no guild-specific data
+                                                author = guild.GetUser(data.Author.Value.Id);
                                         }
-                                        else if (channel is SocketGroupChannel groupChannel)
-                                            author = groupChannel.GetOrAddUser(data.Author.Value);
                                         else
-                                        {
-                                            await UnknownChannelUserAsync(type, data.Author.Value.Id, channel.Id).ConfigureAwait(false);
-                                            return;
-                                        }
-                                    }
+                                            author = (channel as SocketChannel).GetUser(data.Author.Value.Id);
 
-                                    var msg = SocketMessage.Create(this, State, author, channel, data);
-                                    SocketChannelHelper.AddMessage(channel, this, msg);
-                                    await TimedInvokeAsync(_messageReceivedEvent, nameof(MessageReceived), msg).ConfigureAwait(false);
+                                        if (author == null)
+                                        {
+                                            if (guild != null)
+                                            {
+                                                if (data.Member.IsSpecified) // member isn't always included, but use it when we can
+                                                {
+                                                    data.Member.Value.User = data.Author.Value;
+                                                    author = guild.AddOrUpdateUser(data.Member.Value);
+                                                }
+                                                else
+                                                    author = guild.AddOrUpdateUser(data.Author.Value); // user has no guild-specific data
+                                            }
+                                            else if (channel is SocketGroupChannel)
+                                                author = (channel as SocketGroupChannel).GetOrAddUser(data.Author.Value);
+                                            else
+                                            {
+                                                await UnknownChannelUserAsync(type, data.Author.Value.Id, channel.Id).ConfigureAwait(false);
+                                                return;
+                                            }
+                                        }
+
+                                        var msg = SocketMessage.Create(this, State, author, channel, data);
+                                        SocketChannelHelper.AddMessage(channel, this, msg);
+                                        await TimedInvokeAsync(_messageReceivedEvent, nameof(MessageReceived), msg).ConfigureAwait(false);
+                                    }
+                                    else
+                                    {
+                                        await UnknownChannelAsync(type, data.ChannelId).ConfigureAwait(false);
+                                        return;
+                                    }
                                 }
                                 break;
                             case "MESSAGE_UPDATE":
@@ -1324,85 +1294,52 @@ namespace Discord.WebSocket
                                     await _gatewayLogger.DebugAsync("Received Dispatch (MESSAGE_UPDATE)").ConfigureAwait(false);
 
                                     var data = (payload as JToken).ToObject<API.Message>(_serializer);
-                                    var channel = GetChannel(data.ChannelId) as ISocketMessageChannel;
-
-                                    var guild = (channel as SocketGuildChannel)?.Guild;
-                                    if (guild != null && !guild.IsSynced)
+                                    if (State.GetChannel(data.ChannelId) is ISocketMessageChannel channel)
                                     {
-                                        await UnsyncedGuildAsync(type, guild.Id).ConfigureAwait(false);
-                                        return;
-                                    }
+                                        var guild = (channel as SocketGuildChannel)?.Guild;
+                                        if (guild != null && !guild.IsSynced)
+                                        {
+                                            await UnsyncedGuildAsync(type, guild.Id).ConfigureAwait(false);
+                                            return;
+                                        }
 
-                                    SocketMessage before = null, after = null;
-                                    SocketMessage cachedMsg = channel?.GetCachedMessage(data.Id);
-                                    bool isCached = cachedMsg != null;
-                                    if (isCached)
-                                    {
-                                        before = cachedMsg.Clone();
-                                        cachedMsg.Update(State, data);
-                                        after = cachedMsg;
+                                        SocketMessage before = null, after = null;
+                                        SocketMessage cachedMsg = channel.GetCachedMessage(data.Id);
+                                        bool isCached = cachedMsg != null;
+                                        if (isCached)
+                                        {
+                                            before = cachedMsg.Clone();
+                                            cachedMsg.Update(State, data);
+                                            after = cachedMsg;
+                                        }
+                                        else
+                                        {
+                                            //Edited message isnt in cache, create a detached one
+                                            SocketUser author;
+                                            if (data.Author.IsSpecified)
+                                            {
+                                                if (guild != null)
+                                                    author = guild.GetUser(data.Author.Value.Id);
+                                                else
+                                                    author = (channel as SocketChannel).GetUser(data.Author.Value.Id);
+                                                if (author == null)
+                                                    author = SocketUnknownUser.Create(this, State, data.Author.Value);
+                                            }
+                                            else
+                                                // Message author wasn't specified in the payload, so create a completely anonymous unknown user
+                                                author = new SocketUnknownUser(this, id: 0);
+
+                                            after = SocketMessage.Create(this, State, author, channel, data);
+                                        }
+                                        var cacheableBefore = new Cacheable<IMessage, ulong>(before, data.Id, isCached, async () => await channel.GetMessageAsync(data.Id).ConfigureAwait(false));
+
+                                        await TimedInvokeAsync(_messageUpdatedEvent, nameof(MessageUpdated), cacheableBefore, after, channel).ConfigureAwait(false);
                                     }
                                     else
                                     {
-                                        //Edited message isnt in cache, create a detached one
-                                        SocketUser author;
-                                        if (data.Author.IsSpecified)
-                                        {
-                                            if (guild != null)
-                                            {
-                                                if (data.WebhookId.IsSpecified)
-                                                    author = SocketWebhookUser.Create(guild, State, data.Author.Value, data.WebhookId.Value);
-                                                else
-                                                    author = guild.GetUser(data.Author.Value.Id);
-                                            }
-                                            else
-                                                author = (channel as SocketChannel)?.GetUser(data.Author.Value.Id);
-
-                                            if (author == null)
-                                            {
-                                                if (guild != null)
-                                                {
-                                                    if (data.Member.IsSpecified) // member isn't always included, but use it when we can
-                                                    {
-                                                        data.Member.Value.User = data.Author.Value;
-                                                        author = guild.AddOrUpdateUser(data.Member.Value);
-                                                    }
-                                                    else
-                                                        author = guild.AddOrUpdateUser(data.Author.Value); // user has no guild-specific data
-                                                }
-                                                else if (channel is SocketGroupChannel groupChannel)
-                                                    author = groupChannel.GetOrAddUser(data.Author.Value);
-                                            }
-                                        }
-                                        else
-                                            // Message author wasn't specified in the payload, so create a completely anonymous unknown user
-                                            author = new SocketUnknownUser(this, id: 0);
-
-                                        if (channel == null)
-                                        {
-                                            if (!data.GuildId.IsSpecified)  // assume it is a DM
-                                            {
-                                                if (data.Author.IsSpecified)
-                                                {
-                                                    var dmChannel = CreateDMChannel(data.ChannelId, data.Author.Value, State);
-                                                    channel = dmChannel;
-                                                    author = dmChannel.Recipient;
-                                                }
-                                                else
-                                                    channel = CreateDMChannel(data.ChannelId, author, State);
-                                            }
-                                            else
-                                            {
-                                                await UnknownChannelAsync(type, data.ChannelId).ConfigureAwait(false);
-                                                return;
-                                            }
-                                        }
-
-                                        after = SocketMessage.Create(this, State, author, channel, data);
+                                        await UnknownChannelAsync(type, data.ChannelId).ConfigureAwait(false);
+                                        return;
                                     }
-                                    var cacheableBefore = new Cacheable<IMessage, ulong>(before, data.Id, isCached, async () => await channel.GetMessageAsync(data.Id).ConfigureAwait(false));
-
-                                    await TimedInvokeAsync(_messageUpdatedEvent, nameof(MessageUpdated), cacheableBefore, after, channel).ConfigureAwait(false);
                                 }
                                 break;
                             case "MESSAGE_DELETE":
@@ -1410,22 +1347,26 @@ namespace Discord.WebSocket
                                     await _gatewayLogger.DebugAsync("Received Dispatch (MESSAGE_DELETE)").ConfigureAwait(false);
 
                                     var data = (payload as JToken).ToObject<API.Message>(_serializer);
-                                    var channel = GetChannel(data.ChannelId) as ISocketMessageChannel;
-
-                                    var guild = (channel as SocketGuildChannel)?.Guild;
-                                    if (!(guild?.IsSynced ?? true))
+                                    if (State.GetChannel(data.ChannelId) is ISocketMessageChannel channel)
                                     {
-                                        await UnsyncedGuildAsync(type, guild.Id).ConfigureAwait(false);
+                                        var guild = (channel as SocketGuildChannel)?.Guild;
+                                        if (!(guild?.IsSynced ?? true))
+                                        {
+                                            await UnsyncedGuildAsync(type, guild.Id).ConfigureAwait(false);
+                                            return;
+                                        }
+
+                                        var msg = SocketChannelHelper.RemoveMessage(channel, this, data.Id);
+                                        bool isCached = msg != null;
+                                        var cacheable = new Cacheable<IMessage, ulong>(msg, data.Id, isCached, async () => await channel.GetMessageAsync(data.Id).ConfigureAwait(false));
+
+                                        await TimedInvokeAsync(_messageDeletedEvent, nameof(MessageDeleted), cacheable, channel).ConfigureAwait(false);
+                                    }
+                                    else
+                                    {
+                                        await UnknownChannelAsync(type, data.ChannelId).ConfigureAwait(false);
                                         return;
                                     }
-
-                                    SocketMessage msg = null;
-                                    if (channel != null)
-                                        msg = SocketChannelHelper.RemoveMessage(channel, this, data.Id);
-                                    var cacheableMsg = new Cacheable<IMessage, ulong>(msg, data.Id, msg != null, () => Task.FromResult((IMessage)null));
-                                    var cacheableChannel = new Cacheable<IMessageChannel, ulong>(channel, data.ChannelId, channel != null, async () => await GetChannelAsync(data.ChannelId).ConfigureAwait(false) as IMessageChannel);
-
-                                    await TimedInvokeAsync(_messageDeletedEvent, nameof(MessageDeleted), cacheableMsg, cacheableChannel).ConfigureAwait(false);
                                 }
                                 break;
                             case "MESSAGE_REACTION_ADD":
@@ -1433,43 +1374,40 @@ namespace Discord.WebSocket
                                     await _gatewayLogger.DebugAsync("Received Dispatch (MESSAGE_REACTION_ADD)").ConfigureAwait(false);
 
                                     var data = (payload as JToken).ToObject<API.Gateway.Reaction>(_serializer);
-                                    var channel = GetChannel(data.ChannelId) as ISocketMessageChannel;
-
-                                    var cachedMsg = channel?.GetCachedMessage(data.MessageId) as SocketUserMessage;
-                                    bool isMsgCached = cachedMsg != null;
-                                    IUser user = null;
-                                    if (channel != null)
-                                        user = await channel.GetUserAsync(data.UserId, CacheMode.CacheOnly).ConfigureAwait(false);
-
-                                    var optionalMsg = !isMsgCached
-                                        ? Optional.Create<SocketUserMessage>()
-                                        : Optional.Create(cachedMsg);
-
-                                    if (data.Member.IsSpecified)
+                                    if (State.GetChannel(data.ChannelId) is ISocketMessageChannel channel)
                                     {
-                                        var guild = (channel as SocketGuildChannel)?.Guild;
+                                        var cachedMsg = channel.GetCachedMessage(data.MessageId) as SocketUserMessage;
+                                        bool isCached = cachedMsg != null;
+                                        var user = await channel.GetUserAsync(data.UserId, CacheMode.CacheOnly).ConfigureAwait(false);
 
-                                        if (guild != null)
-                                            user = guild.AddOrUpdateUser(data.Member.Value);
+                                        var optionalMsg = !isCached
+                                            ? Optional.Create<SocketUserMessage>()
+                                            : Optional.Create(cachedMsg);
+
+                                        if (data.Member.IsSpecified)
+                                        {
+                                            var guild = (channel as SocketGuildChannel)?.Guild;
+                                            
+                                            if (guild != null)
+                                                user = guild.AddOrUpdateUser(data.Member.Value);
+                                        }
+
+                                        var optionalUser = user is null
+                                            ? Optional.Create<IUser>()
+                                            : Optional.Create(user);
+
+                                        var reaction = SocketReaction.Create(data, channel, optionalMsg, optionalUser);
+                                        var cacheable = new Cacheable<IUserMessage, ulong>(cachedMsg, data.MessageId, isCached, async () => await channel.GetMessageAsync(data.MessageId).ConfigureAwait(false) as IUserMessage);
+
+                                        cachedMsg?.AddReaction(reaction);
+
+                                        await TimedInvokeAsync(_reactionAddedEvent, nameof(ReactionAdded), cacheable, channel, reaction).ConfigureAwait(false);
                                     }
                                     else
-                                        user = GetUser(data.UserId);
-
-                                    var optionalUser = user is null
-                                        ? Optional.Create<IUser>()
-                                        : Optional.Create(user);
-
-                                    var cacheableChannel = new Cacheable<IMessageChannel, ulong>(channel, data.ChannelId, channel != null, async () => await GetChannelAsync(data.ChannelId).ConfigureAwait(false) as IMessageChannel);
-                                    var cacheableMsg = new Cacheable<IUserMessage, ulong>(cachedMsg, data.MessageId, isMsgCached, async () =>
                                     {
-                                        var channelObj = await cacheableChannel.GetOrDownloadAsync().ConfigureAwait(false);
-                                        return await channelObj.GetMessageAsync(data.MessageId).ConfigureAwait(false) as IUserMessage;
-                                    });
-                                    var reaction = SocketReaction.Create(data, channel, optionalMsg, optionalUser);
-
-                                    cachedMsg?.AddReaction(reaction);
-
-                                    await TimedInvokeAsync(_reactionAddedEvent, nameof(ReactionAdded), cacheableMsg, cacheableChannel, reaction).ConfigureAwait(false);
+                                        await UnknownChannelAsync(type, data.ChannelId).ConfigureAwait(false);
+                                        return;
+                                    }
                                 }
                                 break;
                             case "MESSAGE_REACTION_REMOVE":
@@ -1477,35 +1415,32 @@ namespace Discord.WebSocket
                                     await _gatewayLogger.DebugAsync("Received Dispatch (MESSAGE_REACTION_REMOVE)").ConfigureAwait(false);
 
                                     var data = (payload as JToken).ToObject<API.Gateway.Reaction>(_serializer);
-                                    var channel = GetChannel(data.ChannelId) as ISocketMessageChannel;
-
-                                    var cachedMsg = channel?.GetCachedMessage(data.MessageId) as SocketUserMessage;
-                                    bool isMsgCached = cachedMsg != null;
-                                    IUser user = null;
-                                    if (channel != null)
-                                        user = await channel.GetUserAsync(data.UserId, CacheMode.CacheOnly).ConfigureAwait(false);
-                                    else if (!data.GuildId.IsSpecified)
-                                        user = GetUser(data.UserId);
-
-                                    var optionalMsg = !isMsgCached
-                                        ? Optional.Create<SocketUserMessage>()
-                                        : Optional.Create(cachedMsg);
-
-                                    var optionalUser = user is null
-                                        ? Optional.Create<IUser>()
-                                        : Optional.Create(user);
-
-                                    var cacheableChannel = new Cacheable<IMessageChannel, ulong>(channel, data.ChannelId, channel != null, async () => await GetChannelAsync(data.ChannelId).ConfigureAwait(false) as IMessageChannel);
-                                    var cacheableMsg = new Cacheable<IUserMessage, ulong>(cachedMsg, data.MessageId, isMsgCached, async () =>
+                                    if (State.GetChannel(data.ChannelId) is ISocketMessageChannel channel)
                                     {
-                                        var channelObj = await cacheableChannel.GetOrDownloadAsync().ConfigureAwait(false);
-                                        return await channelObj.GetMessageAsync(data.MessageId).ConfigureAwait(false) as IUserMessage;
-                                    });
-                                    var reaction = SocketReaction.Create(data, channel, optionalMsg, optionalUser);
+                                        var cachedMsg = channel.GetCachedMessage(data.MessageId) as SocketUserMessage;
+                                        bool isCached = cachedMsg != null;
+                                        var user = await channel.GetUserAsync(data.UserId, CacheMode.CacheOnly).ConfigureAwait(false);
 
-                                    cachedMsg?.RemoveReaction(reaction);
+                                        var optionalMsg = !isCached
+                                            ? Optional.Create<SocketUserMessage>()
+                                            : Optional.Create(cachedMsg);
 
-                                    await TimedInvokeAsync(_reactionRemovedEvent, nameof(ReactionRemoved), cacheableMsg, cacheableChannel, reaction).ConfigureAwait(false);
+                                        var optionalUser = user is null
+                                            ? Optional.Create<IUser>()
+                                            : Optional.Create(user);
+
+                                        var reaction = SocketReaction.Create(data, channel, optionalMsg, optionalUser);
+                                        var cacheable = new Cacheable<IUserMessage, ulong>(cachedMsg, data.MessageId, isCached, async () => await channel.GetMessageAsync(data.MessageId).ConfigureAwait(false) as IUserMessage);
+
+                                        cachedMsg?.RemoveReaction(reaction);
+
+                                        await TimedInvokeAsync(_reactionRemovedEvent, nameof(ReactionRemoved), cacheable, channel, reaction).ConfigureAwait(false);
+                                    }
+                                    else
+                                    {
+                                        await UnknownChannelAsync(type, data.ChannelId).ConfigureAwait(false);
+                                        return;
+                                    }
                                 }
                                 break;
                             case "MESSAGE_REACTION_REMOVE_ALL":
@@ -1513,20 +1448,21 @@ namespace Discord.WebSocket
                                     await _gatewayLogger.DebugAsync("Received Dispatch (MESSAGE_REACTION_REMOVE_ALL)").ConfigureAwait(false);
 
                                     var data = (payload as JToken).ToObject<RemoveAllReactionsEvent>(_serializer);
-                                    var channel = GetChannel(data.ChannelId) as ISocketMessageChannel;
-
-                                    var cacheableChannel = new Cacheable<IMessageChannel, ulong>(channel, data.ChannelId, channel != null, async () => await GetChannelAsync(data.ChannelId).ConfigureAwait(false) as IMessageChannel);
-                                    var cachedMsg = channel?.GetCachedMessage(data.MessageId) as SocketUserMessage;
-                                    bool isMsgCached = cachedMsg != null;
-                                    var cacheableMsg = new Cacheable<IUserMessage, ulong>(cachedMsg, data.MessageId, isMsgCached, async () =>
+                                    if (State.GetChannel(data.ChannelId) is ISocketMessageChannel channel)
                                     {
-                                        var channelObj = await cacheableChannel.GetOrDownloadAsync().ConfigureAwait(false);
-                                        return await channelObj.GetMessageAsync(data.MessageId).ConfigureAwait(false) as IUserMessage;
-                                    });
+                                        var cachedMsg = channel.GetCachedMessage(data.MessageId) as SocketUserMessage;
+                                        bool isCached = cachedMsg != null;
+                                        var cacheable = new Cacheable<IUserMessage, ulong>(cachedMsg, data.MessageId, isCached, async () => (await channel.GetMessageAsync(data.MessageId).ConfigureAwait(false)) as IUserMessage);
 
-                                    cachedMsg?.ClearReactions();
+                                        cachedMsg?.ClearReactions();
 
-                                    await TimedInvokeAsync(_reactionsClearedEvent, nameof(ReactionsCleared), cacheableMsg, cacheableChannel).ConfigureAwait(false);
+                                        await TimedInvokeAsync(_reactionsClearedEvent, nameof(ReactionsCleared), cacheable, channel).ConfigureAwait(false);
+                                    }
+                                    else
+                                    {
+                                        await UnknownChannelAsync(type, data.ChannelId).ConfigureAwait(false);
+                                        return;
+                                    }
                                 }
                                 break;
                             case "MESSAGE_REACTION_REMOVE_EMOJI":
@@ -1534,55 +1470,70 @@ namespace Discord.WebSocket
                                     await _gatewayLogger.DebugAsync("Received Dispatch (MESSAGE_REACTION_REMOVE_EMOJI)").ConfigureAwait(false);
 
                                     var data = (payload as JToken).ToObject<API.Gateway.RemoveAllReactionsForEmoteEvent>(_serializer);
-                                    var channel = GetChannel(data.ChannelId) as ISocketMessageChannel;
-
-                                    var cachedMsg = channel?.GetCachedMessage(data.MessageId) as SocketUserMessage;
-                                    bool isMsgCached = cachedMsg != null;
-
-                                    var optionalMsg = !isMsgCached
-                                        ? Optional.Create<SocketUserMessage>()
-                                        : Optional.Create(cachedMsg);
-
-                                    var cacheableChannel = new Cacheable<IMessageChannel, ulong>(channel, data.ChannelId, channel != null, async () => await GetChannelAsync(data.ChannelId).ConfigureAwait(false) as IMessageChannel);
-                                    var cacheableMsg = new Cacheable<IUserMessage, ulong>(cachedMsg, data.MessageId, isMsgCached, async () =>
+                                    if (State.GetChannel(data.ChannelId) is ISocketMessageChannel channel)
                                     {
-                                        var channelObj = await cacheableChannel.GetOrDownloadAsync().ConfigureAwait(false);
-                                        return await channelObj.GetMessageAsync(data.MessageId).ConfigureAwait(false) as IUserMessage;
-                                    });
-                                    var emote = data.Emoji.ToIEmote();
+                                        var cachedMsg = channel.GetCachedMessage(data.MessageId) as SocketUserMessage;
+                                        bool isCached = cachedMsg != null;
 
-                                    cachedMsg?.RemoveReactionsForEmote(emote);
+                                        var optionalMsg = !isCached
+                                            ? Optional.Create<SocketUserMessage>()
+                                            : Optional.Create(cachedMsg);
 
-                                    await TimedInvokeAsync(_reactionsRemovedForEmoteEvent, nameof(ReactionsRemovedForEmote), cacheableMsg, cacheableChannel, emote).ConfigureAwait(false);
+                                        var cacheable = new Cacheable<IUserMessage, ulong>(cachedMsg, data.MessageId, isCached, async () => await channel.GetMessageAsync(data.MessageId).ConfigureAwait(false) as IUserMessage);
+                                        var emote = data.Emoji.ToIEmote();
+
+                                        cachedMsg?.RemoveReactionsForEmote(emote);
+
+                                        await TimedInvokeAsync(_reactionsRemovedForEmoteEvent, nameof(ReactionsRemovedForEmote), cacheable, channel, emote).ConfigureAwait(false);
+                                    }
+                                    else
+                                    {
+                                        await UnknownChannelAsync(type, data.ChannelId).ConfigureAwait(false);
+                                        return;
+                                    }
                                 }
                                 break;
                             case "MESSAGE_DELETE_BULK":
                                 {
                                     await _gatewayLogger.DebugAsync("Received Dispatch (MESSAGE_DELETE_BULK)").ConfigureAwait(false);
 
-                                    var data = (payload as JToken).ToObject<MessageDeleteBulkEvent>(_serializer);
-                                    var channel = GetChannel(data.ChannelId) as ISocketMessageChannel;
-
-                                    var guild = (channel as SocketGuildChannel)?.Guild;
-                                    if (!(guild?.IsSynced ?? true))
+                                    if (!ExclusiveBulkDelete.HasValue)
                                     {
-                                        await UnsyncedGuildAsync(type, guild.Id).ConfigureAwait(false);
+                                        await _gatewayLogger.WarningAsync("A bulk delete event has been received, but the event handling behavior has not been set. " +
+                                            "To suppress this message, set the ExclusiveBulkDelete configuration property. " +
+                                            "This message will appear only once.");
+                                        ExclusiveBulkDelete = false;
+                                    }
+
+                                    var data = (payload as JToken).ToObject<MessageDeleteBulkEvent>(_serializer);
+                                    if (State.GetChannel(data.ChannelId) is ISocketMessageChannel channel)
+                                    {
+                                        var guild = (channel as SocketGuildChannel)?.Guild;
+                                        if (!(guild?.IsSynced ?? true))
+                                        {
+                                            await UnsyncedGuildAsync(type, guild.Id).ConfigureAwait(false);
+                                            return;
+                                        }
+
+                                        var cacheableList = new List<Cacheable<IMessage, ulong>>(data.Ids.Length);
+                                        foreach (ulong id in data.Ids)
+                                        {
+                                            var msg = SocketChannelHelper.RemoveMessage(channel, this, id);
+                                            bool isCached = msg != null;
+                                            var cacheable = new Cacheable<IMessage, ulong>(msg, id, isCached, async () => await channel.GetMessageAsync(id).ConfigureAwait(false));
+                                            cacheableList.Add(cacheable);
+
+                                            if (!ExclusiveBulkDelete ?? false) // this shouldn't happen, but we'll play it safe anyways
+                                                await TimedInvokeAsync(_messageDeletedEvent, nameof(MessageDeleted), cacheable, channel).ConfigureAwait(false);
+                                        }
+
+                                        await TimedInvokeAsync(_messagesBulkDeletedEvent, nameof(MessagesBulkDeleted), cacheableList, channel).ConfigureAwait(false);
+                                    }
+                                    else
+                                    {
+                                        await UnknownChannelAsync(type, data.ChannelId).ConfigureAwait(false);
                                         return;
                                     }
-
-                                    var cacheableChannel = new Cacheable<IMessageChannel, ulong>(channel, data.ChannelId, channel != null, async () => await GetChannelAsync(data.ChannelId).ConfigureAwait(false) as IMessageChannel);
-                                    var cacheableList = new List<Cacheable<IMessage, ulong>>(data.Ids.Length);
-                                    foreach (ulong id in data.Ids)
-                                    {
-                                        SocketMessage msg = null;
-                                        if (channel != null)
-                                            msg = SocketChannelHelper.RemoveMessage(channel, this, id);
-                                        bool isMsgCached = msg != null;
-                                        var cacheableMsg = new Cacheable<IMessage, ulong>(msg, id, isMsgCached, () => Task.FromResult((IMessage)null));
-                                        cacheableList.Add(cacheableMsg);
-                                    }
-
-                                    await TimedInvokeAsync(_messagesBulkDeletedEvent, nameof(MessagesBulkDeleted), cacheableList, cacheableChannel).ConfigureAwait(false);
                                 }
                                 break;
 
@@ -1628,8 +1579,7 @@ namespace Discord.WebSocket
 
                                         var before = user.Clone();
                                         user.Update(State, data, true);
-                                        var cacheableBefore = new Cacheable<SocketGuildUser, ulong>(before, user.Id, true, () => Task.FromResult(user));
-                                        await TimedInvokeAsync(_guildMemberUpdatedEvent, nameof(GuildMemberUpdated), cacheableBefore, user).ConfigureAwait(false);
+                                        await TimedInvokeAsync(_guildMemberUpdatedEvent, nameof(GuildMemberUpdated), before, user).ConfigureAwait(false);
                                     }
                                     else
                                     {
@@ -1652,26 +1602,24 @@ namespace Discord.WebSocket
                                     await _gatewayLogger.DebugAsync("Received Dispatch (TYPING_START)").ConfigureAwait(false);
 
                                     var data = (payload as JToken).ToObject<TypingStartEvent>(_serializer);
-                                    var channel = GetChannel(data.ChannelId) as ISocketMessageChannel;
-
-                                    var guild = (channel as SocketGuildChannel)?.Guild;
-                                    if (!(guild?.IsSynced ?? true))
+                                    if (State.GetChannel(data.ChannelId) is ISocketMessageChannel channel)
                                     {
-                                        await UnsyncedGuildAsync(type, guild.Id).ConfigureAwait(false);
-                                        return;
+                                        var guild = (channel as SocketGuildChannel)?.Guild;
+                                        if (!(guild?.IsSynced ?? true))
+                                        {
+                                            await UnsyncedGuildAsync(type, guild.Id).ConfigureAwait(false);
+                                            return;
+                                        }
+
+                                        var user = (channel as SocketChannel).GetUser(data.UserId);
+                                        if (user == null)
+                                        {
+                                            if (guild != null)
+                                                user = guild.AddOrUpdateUser(data.Member);
+                                        }
+                                        if (user != null)
+                                            await TimedInvokeAsync(_userIsTypingEvent, nameof(UserIsTyping), user, channel).ConfigureAwait(false);
                                     }
-
-                                    var cacheableChannel = new Cacheable<IMessageChannel, ulong>(channel, data.ChannelId, channel != null, async () => await GetChannelAsync(data.ChannelId).ConfigureAwait(false) as IMessageChannel);
-
-                                    var user = (channel as SocketChannel)?.GetUser(data.UserId);
-                                    if (user == null)
-                                    {
-                                        if (guild != null)
-                                            user = guild.AddOrUpdateUser(data.Member);
-                                    }
-                                    var cacheableUser = new Cacheable<IUser, ulong>(user, data.UserId, user != null, async () => await GetUserAsync(data.UserId).ConfigureAwait(false));
-
-                                    await TimedInvokeAsync(_userIsTypingEvent, nameof(UserIsTyping), cacheableUser, cacheableChannel).ConfigureAwait(false);
                                 }
                                 break;
 
@@ -1743,7 +1691,7 @@ namespace Discord.WebSocket
                                     }
                                     else
                                     {
-                                        var groupChannel = GetChannel(data.ChannelId.Value) as SocketGroupChannel;
+                                        var groupChannel = State.GetChannel(data.ChannelId.Value) as SocketGroupChannel;
                                         if (groupChannel == null)
                                         {
                                             await UnknownChannelAsync(type, data.ChannelId.Value).ConfigureAwait(false);
@@ -2068,32 +2016,23 @@ namespace Discord.WebSocket
         {
             var channel = SocketChannel.CreatePrivate(this, state, model);
             state.AddChannel(channel as SocketChannel);
+            if (channel is SocketDMChannel dm)
+                dm.Recipient.GlobalUser.DMChannel = dm;
+
             return channel;
-        }
-        internal SocketDMChannel CreateDMChannel(ulong channelId, API.User model, ClientState state)
-        {
-            return SocketDMChannel.Create(this, state, channelId, model);
-        }
-        internal SocketDMChannel CreateDMChannel(ulong channelId, SocketUser user, ClientState state)
-        {
-            return new SocketDMChannel(this, channelId, user);
         }
         internal ISocketPrivateChannel RemovePrivateChannel(ulong id)
         {
             var channel = State.RemoveChannel(id) as ISocketPrivateChannel;
             if (channel != null)
             {
+                if (channel is SocketDMChannel dmChannel)
+                    dmChannel.Recipient.GlobalUser.DMChannel = null;
+
                 foreach (var recipient in channel.Recipients)
                     recipient.GlobalUser.RemoveRef(this);
             }
             return channel;
-        }
-        internal void RemoveDMChannels()
-        {
-            var channels = State.DMChannels;
-            State.PurgeDMChannels();
-            foreach (var channel in channels)
-                channel.Recipient.GlobalUser.RemoveRef(this);
         }
 
         private async Task GuildAvailableAsync(SocketGuild guild)
@@ -2250,8 +2189,8 @@ namespace Discord.WebSocket
             => await GetApplicationInfoAsync().ConfigureAwait(false);
 
         /// <inheritdoc />
-        async Task<IChannel> IDiscordClient.GetChannelAsync(ulong id, CacheMode mode, RequestOptions options)
-            => mode == CacheMode.AllowDownload ? await GetChannelAsync(id, options).ConfigureAwait(false) : GetChannel(id);
+        Task<IChannel> IDiscordClient.GetChannelAsync(ulong id, CacheMode mode, RequestOptions options)
+            => Task.FromResult<IChannel>(GetChannel(id));
         /// <inheritdoc />
         Task<IReadOnlyCollection<IPrivateChannel>> IDiscordClient.GetPrivateChannelsAsync(CacheMode mode, RequestOptions options)
             => Task.FromResult<IReadOnlyCollection<IPrivateChannel>>(PrivateChannels);
@@ -2281,8 +2220,8 @@ namespace Discord.WebSocket
             => await CreateGuildAsync(name, region, jpegIcon).ConfigureAwait(false);
 
         /// <inheritdoc />
-        async Task<IUser> IDiscordClient.GetUserAsync(ulong id, CacheMode mode, RequestOptions options)
-            => mode == CacheMode.AllowDownload ? await GetUserAsync(id, options).ConfigureAwait(false) : GetUser(id);
+        Task<IUser> IDiscordClient.GetUserAsync(ulong id, CacheMode mode, RequestOptions options)
+            => Task.FromResult<IUser>(GetUser(id));
         /// <inheritdoc />
         Task<IUser> IDiscordClient.GetUserAsync(string username, string discriminator, RequestOptions options)
             => Task.FromResult<IUser>(GetUser(username, discriminator));

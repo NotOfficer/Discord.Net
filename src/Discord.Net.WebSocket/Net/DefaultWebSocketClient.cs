@@ -108,10 +108,10 @@ namespace Discord.Net.WebSockets
         }
         private async Task DisconnectInternalAsync(int closeCode = 1000, bool isDisposing = false)
         {
-            _isDisconnecting = true;
-
             try { _disconnectTokenSource.Cancel(false); }
             catch { }
+
+            _isDisconnecting = true;
 
             if (_client != null)
             {
@@ -166,14 +166,7 @@ namespace Discord.Net.WebSockets
 
         public async Task SendAsync(byte[] data, int index, int count, bool isText)
         {
-            try
-            {
-                await _lock.WaitAsync(_cancelToken).ConfigureAwait(false);
-            }
-            catch (TaskCanceledException)
-            {
-                return;
-            }
+            await _lock.WaitAsync().ConfigureAwait(false);
             try
             {
                 if (_client == null) return;
@@ -208,7 +201,7 @@ namespace Discord.Net.WebSockets
             {
                 while (!cancelToken.IsCancellationRequested)
                 {
-                    WebSocketReceiveResult socketResult = await _client.ReceiveAsync(buffer, cancelToken).ConfigureAwait(false);
+                    WebSocketReceiveResult socketResult = await _client.ReceiveAsync(buffer, CancellationToken.None).ConfigureAwait(false);
                     byte[] result;
                     int resultCount;
 

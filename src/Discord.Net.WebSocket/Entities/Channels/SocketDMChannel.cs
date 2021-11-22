@@ -16,43 +16,38 @@ namespace Discord.WebSocket
     [DebuggerDisplay(@"{DebuggerDisplay,nq}")]
     public class SocketDMChannel : SocketChannel, IDMChannel, ISocketPrivateChannel, ISocketMessageChannel
     {
+        private readonly MessageCache _messages;
+
         /// <summary>
         ///     Gets the recipient of the channel.
         /// </summary>
         public SocketUser Recipient { get; }
 
         /// <inheritdoc />
-        public IReadOnlyCollection<SocketMessage> CachedMessages => ImmutableArray.Create<SocketMessage>();
+        public IReadOnlyCollection<SocketMessage> CachedMessages => _messages?.Messages ?? ImmutableArray.Create<SocketMessage>();
 
         /// <summary>
         ///     Gets a collection that is the current logged-in user and the recipient.
         /// </summary>
         public new IReadOnlyCollection<SocketUser> Users => ImmutableArray.Create(Discord.CurrentUser, Recipient);
 
-        internal SocketDMChannel(DiscordSocketClient discord, ulong id, SocketUser recipient)
+        internal SocketDMChannel(DiscordSocketClient discord, ulong id, SocketGlobalUser recipient)
             : base(discord, id)
         {
             Recipient = recipient;
+            recipient.GlobalUser.AddRef();
+            if (Discord.MessageCacheSize > 0)
+                _messages = new MessageCache(Discord);
         }
         internal static SocketDMChannel Create(DiscordSocketClient discord, ClientState state, Model model)
         {
-            var entity = new SocketDMChannel(discord, model.Id, discord.GetOrCreateTemporaryUser(state, model.Recipients.Value[0]));
+            var entity = new SocketDMChannel(discord, model.Id, discord.GetOrCreateUser(state, model.Recipients.Value[0]));
             entity.Update(state, model);
             return entity;
         }
         internal override void Update(ClientState state, Model model)
         {
             Recipient.Update(state, model.Recipients.Value[0]);
-        }
-        internal static SocketDMChannel Create(DiscordSocketClient discord, ClientState state, ulong channelId, API.User recipient)
-        {
-            var entity = new SocketDMChannel(discord, channelId, discord.GetOrCreateTemporaryUser(state, recipient));
-            entity.Update(state, recipient);
-            return entity;
-        }
-        internal void Update(ClientState state, API.User recipient)
-        {
-            Recipient.Update(state, recipient);
         }
 
         /// <inheritdoc />
@@ -62,7 +57,7 @@ namespace Discord.WebSocket
         //Messages
         /// <inheritdoc />
         public SocketMessage GetCachedMessage(ulong id)
-            => null;
+            => _messages?.Get(id);
         /// <summary>
         ///     Gets the message associated with the given <paramref name="id"/>.
         /// </summary>
@@ -73,7 +68,10 @@ namespace Discord.WebSocket
         /// </returns>
         public async Task<IMessage> GetMessageAsync(ulong id, RequestOptions options = null)
         {
-            return await ChannelHelper.GetMessageAsync(this, Discord, id, options).ConfigureAwait(false);
+            IMessage msg = _messages?.Get(id);
+            if (msg == null)
+                msg = await ChannelHelper.GetMessageAsync(this, Discord, id, options).ConfigureAwait(false);
+            return msg;
         }
 
         /// <summary>
@@ -89,7 +87,7 @@ namespace Discord.WebSocket
         ///     Paged collection of messages.
         /// </returns>
         public IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(int limit = DiscordConfig.MaxMessagesPerBatch, RequestOptions options = null)
-            => ChannelHelper.GetMessagesAsync(this, Discord, null, Direction.Before, limit, options);
+            => SocketChannelHelper.GetMessagesAsync(this, Discord, _messages, null, Direction.Before, limit, CacheMode.AllowDownload, options);
         /// <summary>
         ///     Gets a collection of messages in this channel.
         /// </summary>
@@ -105,7 +103,7 @@ namespace Discord.WebSocket
         ///     Paged collection of messages.
         /// </returns>
         public IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(ulong fromMessageId, Direction dir, int limit = DiscordConfig.MaxMessagesPerBatch, RequestOptions options = null)
-            => ChannelHelper.GetMessagesAsync(this, Discord, fromMessageId, dir, limit, options);
+            => SocketChannelHelper.GetMessagesAsync(this, Discord, _messages, fromMessageId, dir, limit, CacheMode.AllowDownload, options);
         /// <summary>
         ///     Gets a collection of messages in this channel.
         /// </summary>
@@ -121,16 +119,16 @@ namespace Discord.WebSocket
         ///     Paged collection of messages.
         /// </returns>
         public IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(IMessage fromMessage, Direction dir, int limit = DiscordConfig.MaxMessagesPerBatch, RequestOptions options = null)
-            => ChannelHelper.GetMessagesAsync(this, Discord, fromMessage.Id, dir, limit, options);
+            => SocketChannelHelper.GetMessagesAsync(this, Discord, _messages, fromMessage.Id, dir, limit, CacheMode.AllowDownload, options);
         /// <inheritdoc />
         public IReadOnlyCollection<SocketMessage> GetCachedMessages(int limit = DiscordConfig.MaxMessagesPerBatch)
-            => ImmutableArray.Create<SocketMessage>();
+            => SocketChannelHelper.GetCachedMessages(this, Discord, _messages, null, Direction.Before, limit);
         /// <inheritdoc />
         public IReadOnlyCollection<SocketMessage> GetCachedMessages(ulong fromMessageId, Direction dir, int limit = DiscordConfig.MaxMessagesPerBatch)
-            => ImmutableArray.Create<SocketMessage>();
+            => SocketChannelHelper.GetCachedMessages(this, Discord, _messages, fromMessageId, dir, limit);
         /// <inheritdoc />
         public IReadOnlyCollection<SocketMessage> GetCachedMessages(IMessage fromMessage, Direction dir, int limit = DiscordConfig.MaxMessagesPerBatch)
-            => ImmutableArray.Create<SocketMessage>();
+            => SocketChannelHelper.GetCachedMessages(this, Discord, _messages, fromMessage.Id, dir, limit);
         /// <inheritdoc />
         public Task<IReadOnlyCollection<RestMessage>> GetPinnedMessagesAsync(RequestOptions options = null)
             => ChannelHelper.GetPinnedMessagesAsync(this, Discord, options);
@@ -166,12 +164,9 @@ namespace Discord.WebSocket
             => ChannelHelper.EnterTypingState(this, Discord, options);
 
         internal void AddMessage(SocketMessage msg)
-        {
-        }
+            => _messages?.Add(msg);
         internal SocketMessage RemoveMessage(ulong id)
-        {
-            return null;
-        }
+            => _messages?.Remove(id);
 
         //Users
         /// <summary>
@@ -227,13 +222,13 @@ namespace Discord.WebSocket
         }
         /// <inheritdoc />
         IAsyncEnumerable<IReadOnlyCollection<IMessage>> IMessageChannel.GetMessagesAsync(int limit, CacheMode mode, RequestOptions options)
-            => mode == CacheMode.CacheOnly ? null : GetMessagesAsync(limit, options);
+            => SocketChannelHelper.GetMessagesAsync(this, Discord, _messages, null, Direction.Before, limit, mode, options);
         /// <inheritdoc />
         IAsyncEnumerable<IReadOnlyCollection<IMessage>> IMessageChannel.GetMessagesAsync(ulong fromMessageId, Direction dir, int limit, CacheMode mode, RequestOptions options)
-            => mode == CacheMode.CacheOnly ? null : GetMessagesAsync(fromMessageId, dir, limit, options);
+            => SocketChannelHelper.GetMessagesAsync(this, Discord, _messages, fromMessageId, dir, limit, mode, options);
         /// <inheritdoc />
         IAsyncEnumerable<IReadOnlyCollection<IMessage>> IMessageChannel.GetMessagesAsync(IMessage fromMessage, Direction dir, int limit, CacheMode mode, RequestOptions options)
-            => mode == CacheMode.CacheOnly ? null : GetMessagesAsync(fromMessage.Id, dir, limit, options);
+            => SocketChannelHelper.GetMessagesAsync(this, Discord, _messages, fromMessage.Id, dir, limit, mode, options);
         /// <inheritdoc />
         async Task<IReadOnlyCollection<IMessage>> IMessageChannel.GetPinnedMessagesAsync(RequestOptions options)
             => await GetPinnedMessagesAsync(options).ConfigureAwait(false);

@@ -75,6 +75,11 @@ namespace Discord
                             nextReconnectDelay = 1000; //Reset delay
                             await _connectionPromise.Task.ConfigureAwait(false);
                         }
+                        catch (OperationCanceledException ex)
+                        {
+                            Cancel(); //In case this exception didn't come from another Error call
+                            await DisconnectAsync(ex, !reconnectCancelToken.IsCancellationRequested).ConfigureAwait(false);
+                        }
                         catch (Exception ex)
                         {
                             Error(ex); //In case this exception didn't come from another Error call
@@ -138,7 +143,16 @@ namespace Discord
                     catch (OperationCanceledException) { }
                 });
 
-                await _onConnecting().ConfigureAwait(false);
+                try
+                {
+                    await _onConnecting().ConfigureAwait(false);
+                }
+                catch (TaskCanceledException ex)
+                {
+                    Exception innerEx = ex.InnerException ?? new OperationCanceledException("Failed to connect.");
+                    Error(innerEx);
+                    throw innerEx;
+                }
 
                 await _logger.InfoAsync("Connected").ConfigureAwait(false);
                 State = ConnectionState.Connected;

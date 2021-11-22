@@ -71,8 +71,6 @@ namespace Discord.Rest
         public MessageReference Reference { get; private set; }
         /// <inheritdoc />
         public MessageFlags? Flags { get; private set; }
-        /// <inheritdoc/>
-        public MessageType Type { get; private set; }
 
         internal RestMessage(BaseDiscordClient discord, ulong id, IMessageChannel channel, IUser author, MessageSource source)
             : base(discord, id)
@@ -90,8 +88,6 @@ namespace Discord.Rest
         }
         internal virtual void Update(Model model)
         {
-            Type = model.Type;
-
             if (model.Timestamp.IsSpecified)
                 _timestampTicks = model.Timestamp.Value.UtcTicks;
 
@@ -170,6 +166,8 @@ namespace Discord.Rest
         /// </returns>
         public override string ToString() => Content;
 
+        /// <inheritdoc />
+        MessageType IMessage.Type => MessageType.Default;
         IUser IMessage.Author => Author;
         /// <inheritdoc />
         IReadOnlyCollection<IAttachment> IMessage.Attachments => Attachments;

@@ -40,8 +40,9 @@ namespace Discord.API
 
         public DiscordSocketApiClient(RestClientProvider restClientProvider, WebSocketProvider webSocketProvider, string userAgent,
             string url = null, RetryMode defaultRetryMode = RetryMode.AlwaysRetry, JsonSerializer serializer = null,
+            RateLimitPrecision rateLimitPrecision = RateLimitPrecision.Second,
 			bool useSystemClock = true)
-            : base(restClientProvider, userAgent, defaultRetryMode, serializer, useSystemClock)
+            : base(restClientProvider, userAgent, defaultRetryMode, serializer, rateLimitPrecision, useSystemClock)
         {
             _gatewayUrl = url;
             if (url != null)
@@ -188,9 +189,9 @@ namespace Discord.API
             catch { }
 
             if (ex is GatewayReconnectException)
-                await WebSocketClient.DisconnectAsync(4000).ConfigureAwait(false);
+                await WebSocketClient.DisconnectAsync(4000);
             else
-                await WebSocketClient.DisconnectAsync().ConfigureAwait(false);
+            await WebSocketClient.DisconnectAsync().ConfigureAwait(false);
 
             ConnectionState = ConnectionState.Disconnected;
         }
@@ -215,7 +216,7 @@ namespace Discord.API
             await _sentGatewayMessageEvent.InvokeAsync(opCode).ConfigureAwait(false);
         }
 
-        public async Task SendIdentifyAsync(int largeThreshold = 100, int shardID = 0, int totalShards = 1, GatewayIntents gatewayIntents = GatewayIntents.AllUnprivileged, (UserStatus, bool, long?, GameModel)? presence = null, RequestOptions options = null)
+        public async Task SendIdentifyAsync(int largeThreshold = 100, int shardID = 0, int totalShards = 1, bool guildSubscriptions = true, GatewayIntents? gatewayIntents = null, (UserStatus, bool, long?, GameModel)? presence = null, RequestOptions options = null)
         {
             options = RequestOptions.CreateOrClone(options);
             var props = new Dictionary<string, string>
@@ -233,7 +234,10 @@ namespace Discord.API
 
             options.BucketId = GatewayBucket.Get(GatewayBucketType.Identify).Id;
 
-            msg.Intents = (int)gatewayIntents;
+            if (gatewayIntents.HasValue)
+                msg.Intents = (int)gatewayIntents.Value;
+            else
+                msg.GuildSubscriptions = guildSubscriptions;
 
             if (presence.HasValue)
             {

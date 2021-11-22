@@ -18,11 +18,11 @@ namespace Discord.Net.Examples.Core.Entities.Users
 
         #endregion
 
-        #region CreateDMChannelAsync
+        #region GetOrCreateDMChannelAsync
 
         public async Task MessageUserAsync(IUser user)
         {
-            var channel = await user.CreateDMChannelAsync();
+            var channel = await user.GetOrCreateDMChannelAsync();
             try
             {
                 await channel.SendMessageAsync("Awesome stuff!");

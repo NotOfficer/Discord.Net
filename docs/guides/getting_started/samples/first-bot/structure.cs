@@ -10,11 +10,11 @@ using Discord.WebSocket;
 class Program
 {
     // Program entry point
-    static Task Main(string[] args)
+    static void Main(string[] args)
     {
         // Call the Program constructor, followed by the 
         // MainAsync method and wait until it finishes (which should be never).
-        return new Program().MainAsync();
+        new Program().MainAsync().GetAwaiter().GetResult();
     }
 
     private readonly DiscordSocketClient _client;

@@ -9,6 +9,9 @@ namespace Discord.Rest
         private long _createdAtTicks;
 
         /// <inheritdoc />
+        [Obsolete("This property doesn't exist anymore and shouldn't be used.")]
+        public bool IsRevoked { get; private set; }
+        /// <inheritdoc />
         public bool IsTemporary { get; private set; }
         /// <inheritdoc />
         public int? MaxAge { get; private set; }

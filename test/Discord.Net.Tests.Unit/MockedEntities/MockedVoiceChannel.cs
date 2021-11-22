@@ -12,8 +12,6 @@ namespace Discord
 
         public int? UserLimit => throw new NotImplementedException();
 
-        public string Mention => throw new NotImplementedException();
-
         public ulong? CategoryId => throw new NotImplementedException();
 
         public int Position => throw new NotImplementedException();

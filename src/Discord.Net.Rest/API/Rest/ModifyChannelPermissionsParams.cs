@@ -1,4 +1,4 @@
-#pragma warning disable CS1591
+﻿#pragma warning disable CS1591
 using Newtonsoft.Json;
 
 namespace Discord.API.Rest
@@ -7,13 +7,13 @@ namespace Discord.API.Rest
     internal class ModifyChannelPermissionsParams
     {
         [JsonProperty("type")]
-        public int Type { get; }
+        public string Type { get; }
         [JsonProperty("allow")]
-        public string Allow { get; }
+        public ulong Allow { get; }
         [JsonProperty("deny")]
-        public string Deny { get; }
+        public ulong Deny { get; }
 
-        public ModifyChannelPermissionsParams(int type, string allow, string deny)
+        public ModifyChannelPermissionsParams(string type, ulong allow, ulong deny)
         {
             Type = type;
             Allow = allow;
