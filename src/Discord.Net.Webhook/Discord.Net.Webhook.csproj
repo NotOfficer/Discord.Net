@@ -5,7 +5,7 @@
     <AssemblyName>Discord.Net.Webhook</AssemblyName>
     <RootNamespace>Discord.Webhook</RootNamespace>
     <Description>A core Discord.Net library containing the Webhook client and models.</Description>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net5.0|AnyCPU'">
     <PlatformTarget>x64</PlatformTarget>
