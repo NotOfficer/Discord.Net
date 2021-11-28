@@ -22,5 +22,7 @@ namespace Discord.API
         public Optional<bool> Pending { get; set; }
         [JsonProperty("premium_since")]
         public Optional<DateTimeOffset?> PremiumSince { get; set; }
+        [JsonProperty("avatar")]
+        public Optional<string> Avatar { get; set; }
     }
 }

@@ -25,6 +25,8 @@ namespace Discord.WebSocket
         /// <inheritdoc />
         public override string AvatarId { get; internal set; }
         /// <inheritdoc />
+        public string GuildAvatarId { get; set; }
+        /// <inheritdoc />
         public override bool IsBot { get; internal set; }
 
         /// <inheritdoc />
@@ -50,7 +52,9 @@ namespace Discord.WebSocket
         private string DebuggerDisplay => $"{Username}#{Discriminator} ({Id}{(IsBot ? ", Bot" : "")}, Webhook)";
         internal new SocketWebhookUser Clone() => MemberwiseClone() as SocketWebhookUser;
 
-
+        /// <inheritdoc />
+        public string GetGuildAvatarUrl(ImageFormat format = ImageFormat.Auto, ushort size = 128)
+            => CDN.GetGuildUserAvatarUrl(Id, Guild.Id, GuildAvatarId, size, format);
         //IGuildUser
         /// <inheritdoc />
         IGuild IGuildUser.Guild => Guild;

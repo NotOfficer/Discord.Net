@@ -30,6 +30,8 @@ namespace Discord.Rest
         /// <inheritdoc />
         public ulong GuildId => Guild.Id;
         /// <inheritdoc />
+        public string GuildAvatarId { get; set; }
+        /// <inheritdoc />
         public bool? IsPending { get; private set; }
 
         /// <inheritdoc />
@@ -43,6 +45,11 @@ namespace Discord.Rest
                 return new GuildPermissions(Permissions.ResolveGuild(Guild, this));
             }
         }
+
+        /// <inheritdoc />
+        public string GetGuildAvatarUrl(ImageFormat format = ImageFormat.Auto, ushort size = 128)
+            => CDN.GetGuildUserAvatarUrl(Id, Guild.Id, GuildAvatarId, size, format);
+
         /// <inheritdoc />
         public IReadOnlyCollection<ulong> RoleIds => _roleIds;
 
@@ -77,6 +84,8 @@ namespace Discord.Rest
                 _premiumSinceTicks = model.PremiumSince.Value?.UtcTicks;
             if (model.Pending.IsSpecified)
                 IsPending = model.Pending.Value;
+            if (model.Avatar.IsSpecified)
+                GuildAvatarId = model.Avatar.Value;
         }
         private void UpdateRoles(ulong[] roleIds)
         {

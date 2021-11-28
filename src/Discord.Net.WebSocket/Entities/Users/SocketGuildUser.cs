@@ -39,7 +39,9 @@ namespace Discord.WebSocket
         /// <inheritdoc />
         public override string AvatarId { get { return GlobalUser.AvatarId; } internal set { GlobalUser.AvatarId = value; } }
         /// <inheritdoc />
-        public GuildPermissions GuildPermissions => new GuildPermissions(Permissions.ResolveGuild(Guild, this));
+        public string GuildAvatarId { get; set; }
+        /// <inheritdoc />
+        public GuildPermissions GuildPermissions => new (Permissions.ResolveGuild(Guild, this));
         internal override SocketPresence Presence { get; set; }
 
         /// <inheritdoc />
@@ -82,6 +84,9 @@ namespace Discord.WebSocket
         public AudioInStream AudioStream => Guild.GetAudioStream(Id);
         /// <inheritdoc />
         public DateTimeOffset? PremiumSince => DateTimeUtils.FromTicks(_premiumSinceTicks);
+        /// <inheritdoc />
+        public string GetGuildAvatarUrl(ImageFormat format = ImageFormat.Auto, ushort size = 128)
+            => CDN.GetGuildUserAvatarUrl(Id, Guild.Id, GuildAvatarId, size, format);
 
         /// <summary>
         ///     Returns the position of the user within the role hierarchy.
@@ -97,8 +102,8 @@ namespace Discord.WebSocket
                 if (Guild.OwnerId == Id)
                     return int.MaxValue;
 
-                int maxPos = 0;
-                for (int i = 0; i < _roleIds.Length; i++)
+                var maxPos = 0;
+                for (var i = 0; i < _roleIds.Length; i++)
                 {
                     var role = Guild.GetRole(_roleIds[i]);
                     if (role != null && role.Position > maxPos)
@@ -118,7 +123,7 @@ namespace Discord.WebSocket
         {
             var entity = new SocketGuildUser(guild, guild.Discord.GetOrCreateUser(state, model));
             entity.Update(state, model);
-            entity.UpdateRoles(new ulong[0]);
+            entity.UpdateRoles(Array.Empty<ulong>());
             return entity;
         }
         internal static SocketGuildUser Create(SocketGuild guild, ClientState state, MemberModel model)
@@ -126,7 +131,7 @@ namespace Discord.WebSocket
             var entity = new SocketGuildUser(guild, guild.Discord.GetOrCreateUser(state, model.User));
             entity.Update(state, model);
             if (!model.Roles.IsSpecified)
-                entity.UpdateRoles(new ulong[0]);
+                entity.UpdateRoles(Array.Empty<ulong>());
             return entity;
         }
         internal static SocketGuildUser Create(SocketGuild guild, ClientState state, PresenceModel model)
@@ -134,7 +139,7 @@ namespace Discord.WebSocket
             var entity = new SocketGuildUser(guild, guild.Discord.GetOrCreateUser(state, model.User));
             entity.Update(state, model, false);
             if (!model.Roles.IsSpecified)
-                entity.UpdateRoles(new ulong[0]);
+                entity.UpdateRoles(Array.Empty<ulong>());
             return entity;
         }
         internal void Update(ClientState state, MemberModel model)
@@ -150,6 +155,8 @@ namespace Discord.WebSocket
                 _premiumSinceTicks = model.PremiumSince.Value?.UtcTicks;
             if (model.Pending.IsSpecified)
                 IsPending = model.Pending.Value;
+            if (model.Avatar.IsSpecified)
+                GuildAvatarId = model.Avatar.Value;
         }
         internal void Update(ClientState state, PresenceModel model, bool updatePresence)
         {
@@ -164,12 +171,14 @@ namespace Discord.WebSocket
                 UpdateRoles(model.Roles.Value);
             if (model.PremiumSince.IsSpecified)
                 _premiumSinceTicks = model.PremiumSince.Value?.UtcTicks;
+            if (model.Avatar.IsSpecified)
+                GuildAvatarId = model.Avatar.Value;
         }
         private void UpdateRoles(ulong[] roleIds)
         {
             var roles = ImmutableArray.CreateBuilder<ulong>(roleIds.Length + 1);
             roles.Add(Guild.Id);
-            for (int i = 0; i < roleIds.Length; i++)
+            for (var i = 0; i < roleIds.Length; i++)
                 roles.Add(roleIds[i]);
             _roleIds = roles.ToImmutable();
         }
@@ -207,7 +216,7 @@ namespace Discord.WebSocket
 
         /// <inheritdoc />
         public ChannelPermissions GetPermissions(IGuildChannel channel)
-            => new ChannelPermissions(Permissions.ResolveChannel(Guild, this, channel, GuildPermissions.RawValue));
+            => new (Permissions.ResolveChannel(Guild, this, channel, GuildPermissions.RawValue));
 
         private string DebuggerDisplay => $"{Username}#{Discriminator} ({Id}{(IsBot ? ", Bot" : "")}, Guild)";
         internal new SocketGuildUser Clone() => MemberwiseClone() as SocketGuildUser;

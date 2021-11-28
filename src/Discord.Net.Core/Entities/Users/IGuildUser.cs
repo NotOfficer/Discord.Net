@@ -10,6 +10,32 @@ namespace Discord
     public interface IGuildUser : IUser, IVoiceState
     {
         /// <summary>
+        ///     Gets the identifier of this user's guild avatar.
+        /// </summary>
+        string GuildAvatarId { get; }
+        /// <summary>
+        ///     Gets the guild avatar URL for this user.
+        /// </summary>
+        /// <remarks>
+        ///     This property retrieves a URL for this user's avatar. In event that the user does not have a valid avatar
+        ///     (i.e. their avatar identifier is not set), this property will return <c>null</c>. If you wish to
+        ///     retrieve the default avatar for this user, consider using <see cref="IUser.GetDefaultAvatarUrl"/> (see
+        ///     example).
+        /// </remarks>
+        /// <example>
+        ///     <para>The following example attempts to retrieve the user's current guild avatar and send it to a channel; if one is
+        ///     not set, a default avatar for this user will be returned instead.</para>
+        ///     <code language="cs" region="GetGuildAvatarUrl"
+        ///           source="..\..\..\Discord.Net.Examples\Core\Entities\Users\IUser.Examples.cs"/>
+        /// </example>
+        /// <param name="format">The format to return.</param>
+        /// <param name="size">The size of the image to return in. This can be any power of two between 16 and 2048.
+        /// </param>
+        /// <returns>
+        ///     A string representing the user's guild avatar URL; <c>null</c> if the user does not have a guild avatar in place.
+        /// </returns>
+        string GetGuildAvatarUrl(ImageFormat format = ImageFormat.Auto, ushort size = 128);
+        /// <summary>
         ///     Gets when this user joined the guild.
         /// </summary>
         /// <returns>

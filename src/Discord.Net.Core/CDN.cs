@@ -43,9 +43,29 @@ namespace Discord
         {
             if (avatarId == null)
                 return null;
-            string extension = FormatToExtension(format, avatarId);
+            var extension = FormatToExtension(format, avatarId);
             return $"{DiscordConfig.CDNUrl}avatars/{userId}/{avatarId}.{extension}?size={size}";
         }
+
+        /// <summary>
+        ///     Returns a user guild avatar URL.
+        /// </summary>
+        /// <param name="userId">The user snowflake identifier.</param>
+        /// <param name="guildId">The guild snowflake identifier.</param>
+        /// <param name="avatarId">The avatar identifier.</param>
+        /// <param name="size">The size of the image to return in horizontal pixels. This can be any power of two between 16 and 2048.</param>
+        /// <param name="format">The format to return.</param>
+        /// <returns>
+        ///     A URL pointing to the user's guild avatar in the specified size.
+        /// </returns>
+        public static string GetGuildUserAvatarUrl(ulong userId, ulong guildId, string avatarId, ushort size, ImageFormat format)
+        {
+            if (avatarId == null)
+                return null;
+            var extension = FormatToExtension(format, avatarId);
+            return $"{DiscordConfig.CDNUrl}guilds/{guildId}/users/{userId}/avatars/{avatarId}.{extension}?size={size}";
+        }
+
         /// <summary>
         ///     Returns the default user avatar URL.
         /// </summary>

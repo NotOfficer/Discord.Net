@@ -20,6 +20,8 @@ namespace Discord.Rest
         public override bool IsWebhook => true;
         /// <inheritdoc />
         public ulong GuildId => Guild.Id;
+        /// <inheritdoc />
+        public string GuildAvatarId { get; set; }
 
         internal RestWebhookUser(BaseDiscordClient discord, IGuild guild, ulong id, ulong webhookId)
             : base(discord, id)
@@ -33,6 +35,10 @@ namespace Discord.Rest
             entity.Update(model);
             return entity;
         }
+
+        /// <inheritdoc />
+        public string GetGuildAvatarUrl(ImageFormat format = ImageFormat.Auto, ushort size = 128)
+            => CDN.GetGuildUserAvatarUrl(Id, Guild.Id, GuildAvatarId, size, format);
 
         //IGuildUser
         /// <inheritdoc />

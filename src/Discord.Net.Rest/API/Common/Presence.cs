@@ -29,5 +29,7 @@ namespace Discord.API
         public List<Game> Activities { get; set; }
         [JsonProperty("premium_since")]
         public Optional<DateTimeOffset?> PremiumSince { get; set; }
+        [JsonProperty("avatar")]
+        public Optional<string> Avatar { get; set; }
     }
 }
