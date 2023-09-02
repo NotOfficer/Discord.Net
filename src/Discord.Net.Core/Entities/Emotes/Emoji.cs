@@ -1,9 +1,11 @@
+using System;
+
 namespace Discord
 {
     /// <summary>
     ///     A Unicode emoji.
     /// </summary>
-    public class Emoji : IEmote
+    public class Emoji : IEmote, IEquatable<Emoji>
     {
         // TODO: need to constrain this to Unicode-only emojis somehow
 
@@ -26,22 +28,32 @@ namespace Discord
             Name = unicode;
         }
 
-        /// <summary>
-        ///     Determines whether the specified emoji is equal to the current one.
-        /// </summary>
-        /// <param name="other">The object to compare with the current object.</param>
-        public override bool Equals(object other)
+        public bool Equals(Emoji other)
         {
-            if (other == null) return false;
-            if (other == this) return true;
+            if (other is null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
 
-            var otherEmoji = other as Emoji;
-            if (otherEmoji == null) return false;
-
-            return string.Equals(Name, otherEmoji.Name);
+            return Name == other.Name;
         }
 
-        /// <inheritdoc />
-        public override int GetHashCode() => Name.GetHashCode();
+        public override bool Equals(object obj)
+        {
+            if (obj is null)
+                return false;
+            if (ReferenceEquals(this, obj))
+                return true;
+            if (obj is not Emoji other)
+                return false;
+
+            return Equals(other);
+        }
+
+        public override int GetHashCode() => Name != null ? Name.GetHashCode() : 0;
+
+        public static bool operator ==(Emoji left, Emoji right) => Equals(left, right);
+
+        public static bool operator !=(Emoji left, Emoji right) => !Equals(left, right);
     }
 }

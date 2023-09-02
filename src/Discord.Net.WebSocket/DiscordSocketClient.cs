@@ -324,8 +324,10 @@ namespace Discord.WebSocket
         ///     A task that represents the asynchronous get operation. The task result contains the user associated with
         ///     the snowflake identifier; <c>null</c> if the user is not found.
         /// </returns>
-        public async ValueTask<IUser> GetUserAsync(ulong id, RequestOptions options = null)
+        public async Task<RestUser> GetUserAsync(ulong id, RequestOptions options = null)
             => await ClientHelper.GetUserAsync(this, id, options).ConfigureAwait(false);
+        public async ValueTask<IUser> TryGetCachedUserAsync(ulong id, RequestOptions options = null)
+            => await ClientHelper.GetUserAsync(this, GetUser, setModel => GetOrCreateUser(State, setModel), id, options).ConfigureAwait(false);
         /// <summary>
         ///     Clears all cached channels from the client.
         /// </summary>

@@ -109,7 +109,7 @@ namespace Discord.WebSocket
         /// <returns>
         ///     The full name of the user.
         /// </returns>
-        public override string ToString() => $"{Username}#{Discriminator}";
+        public override string ToString() => DiscriminatorValue == 0 ? Username : $"{Username}#{Discriminator}";
         private string DebuggerDisplay => $"{Username}#{Discriminator} ({Id}{(IsBot ? ", Bot" : "")})";
         internal SocketUser Clone() => MemberwiseClone() as SocketUser;
     }

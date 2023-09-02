@@ -129,6 +129,20 @@ namespace Discord.Rest
             return RestGuild.Create(client, model);
         }
 
+        public static async ValueTask<IUser> GetUserAsync(BaseDiscordClient client, Func<ulong, IUser> getCachedFunc, Func<API.User, IUser> setCacheFunc,
+            ulong id, RequestOptions options)
+        {
+            var cached = getCachedFunc(id);
+            if (cached != null)
+                return cached;
+
+            var model = await client.ApiClient.GetUserAsync(id, options).ConfigureAwait(false);
+            if (model == null)
+                return null;
+
+            var user = setCacheFunc(model);
+            return user;
+        }
         public static async Task<RestUser> GetUserAsync(BaseDiscordClient client,
             ulong id, RequestOptions options)
         {

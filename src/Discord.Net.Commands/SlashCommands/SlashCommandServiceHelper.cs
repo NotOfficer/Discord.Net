@@ -208,6 +208,9 @@ namespace Discord.SlashCommands
                 //Delegate delegateMethod = CreateDelegate(commandMethod, moduleInfo.userCommandModule);
                 var commandInfo = new SlashCommandInfo(
                     moduleInfo,
+#if DEBUG
+                    "test" +
+#endif
                     slashCommand.Name,
                     slashCommand.Description,
                     // Generate the parameters. Due to it's complicated way the algorithm has been moved to its own function.
