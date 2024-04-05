@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Globalization;
 
@@ -14,6 +14,8 @@ namespace Discord.Net.Converters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
+            if (reader.TokenType == JsonToken.Integer)
+                return (ulong)(long)reader.Value;
             return ulong.Parse((string)reader.Value, NumberStyles.None, CultureInfo.InvariantCulture);
         }
 
