@@ -6,9 +6,15 @@
     <Description>An optional WebSocket client provider for Discord.Net using WebSocket4Net</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Discord.Net.Core\Discord.Net.Core.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="WebSocket4Net" Version="0.15.2" />
   </ItemGroup>
