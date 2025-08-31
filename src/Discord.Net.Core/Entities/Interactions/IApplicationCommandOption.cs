@@ -1,13 +1,9 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Discord
 {
     /// <summary>
-    ///     Options for the <see cref="IApplicationCommand"/>, see <see href="https://discord.com/developers/docs/interactions/slash-commands#applicationcommandoption"/>The docs</see>.
+    ///     Options for the <see cref="IApplicationCommand"/>, see <see href="https://discord.com/developers/docs/interactions/slash-commands#applicationcommandoption">The Docs</see>.
     /// </summary>
     public interface IApplicationCommandOption
     {
@@ -39,11 +35,11 @@ namespace Discord
         /// <summary>
         ///     Choices for string and int types for the user to pick from.
         /// </summary>
-        IReadOnlyCollection<IApplicationCommandOptionChoice>? Choices { get; }
+        IReadOnlyCollection<IApplicationCommandOptionChoice> Choices { get; }
 
         /// <summary>
         ///     If the option is a subcommand or subcommand group type, this nested options will be the parameters.
         /// </summary>
-        IReadOnlyCollection<IApplicationCommandOption>? Options { get; }
+        IReadOnlyCollection<IApplicationCommandOption> Options { get; }
     }
 }

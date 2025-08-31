@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Discord
@@ -11,11 +8,6 @@ namespace Discord
     /// </summary>
     public interface IApplicationCommand : ISnowflakeEntity
     {
-        /// <summary>
-        ///     Gets the unique id of the command.
-        /// </summary>
-        ulong Id { get; }
-
         /// <summary>
         ///     Gets the unique id of the parent application.
         /// </summary>

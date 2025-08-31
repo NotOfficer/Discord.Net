@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Discord
 {
     /// <summary>
@@ -15,11 +9,6 @@ namespace Discord
     /// </summary>
     public interface IDiscordInteraction : ISnowflakeEntity
     {
-        /// <summary>
-        ///     The id of the interaction.
-        /// </summary>
-        ulong Id { get; }
-
         /// <summary>
         /// 
         /// </summary>
@@ -33,7 +22,7 @@ namespace Discord
         /// <summary>
         ///     The command data payload.
         /// </summary>
-        IApplicationCommandInteractionData? Data { get; }
+        IApplicationCommandInteractionData Data { get; }
 
         /// <summary>
         ///     A continuation token for responding to the interaction.
