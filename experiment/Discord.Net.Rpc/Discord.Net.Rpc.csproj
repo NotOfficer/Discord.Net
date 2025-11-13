@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="../../Discord.Net.targets" />
   <PropertyGroup>
     <AssemblyName>Discord.Net.Rpc</AssemblyName>
@@ -22,3 +22,5 @@
     <PackageReference Include="System.Net.WebSockets.Client" Version="4.3.1" />
   </ItemGroup>
 </Project>
+
+

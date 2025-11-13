@@ -19,3 +19,5 @@
     <ProjectReference Include="..\Discord.Net.Commands\Discord.Net.Commands.csproj" />
   </ItemGroup>
 </Project>
+
+

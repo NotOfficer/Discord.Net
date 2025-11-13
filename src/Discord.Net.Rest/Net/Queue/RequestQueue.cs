@@ -59,7 +59,7 @@ namespace Discord.Net.Queue
                 _clearToken?.Cancel();
                 _clearToken?.Dispose();
                 _clearToken = new CancellationTokenSource();
-                if (_parentToken != null)
+                if (_parentToken != CancellationToken.None)
                 {
                     _requestCancelTokenSource?.Dispose();
                     _requestCancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_clearToken.Token, _parentToken);

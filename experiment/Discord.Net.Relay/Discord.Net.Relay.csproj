@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="../../Discord.Net.targets" />
   <PropertyGroup>
     <AssemblyName>Discord.Net.Relay</AssemblyName>
@@ -16,3 +16,5 @@
     <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="1.0.2" />
   </ItemGroup>
 </Project>
+
+
