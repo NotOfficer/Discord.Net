@@ -6,7 +6,7 @@
     <AssemblyName>Discord.Net.Rest</AssemblyName>
     <RootNamespace>Discord.Rest</RootNamespace>
     <Description>A core Discord.Net library containing the REST client and models.</Description>
-    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">

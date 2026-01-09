@@ -6,7 +6,7 @@
     <AssemblyName>Discord.Net.Core</AssemblyName>
     <RootNamespace>Discord</RootNamespace>
     <Description>The core components for the Discord.Net library.</Description>
-    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
